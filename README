@@ -1,0 +1,20 @@
+honey[potd]aemon
+================
+
+This project is part of a BA thesis. It is all but not finished yet.
+(Currently) Supported protocols:
+  ssh with libssh
+
+Suits perfect for your favoured Desktop/Server/OpenWrt Linux system.
+
+
+TODOs
+=====
+
+Priority == Item order!
+1. more/other jail options (e.g. per jail filesystem w/ image managment)
+2. RESTful listener for output sampled data from different processes
+    (send (real-time)statistics about protocols/jails/etc to highler level apps)
+3. ptrace support for jailed apps (trace syscalls)
+4. implement more protocols such as SCADA/MySQL/telnet/Jabber/IRC/IMAP/POP
+5. improved event handling (maybe libevent?)
