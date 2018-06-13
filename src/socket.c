@@ -294,7 +294,7 @@ ssize_t socket_get_ifnames(const psocket *test_sock, char name[][IFNAMSIZ],
 int socket_set_ifaddr(const psocket *test_sock,
                       const char *ifname, const char *addr, const char *mask)
 {
-    struct ifreq ifr;
+    struct ifreq ifr = {0};
     int sock;
 
     assert(test_sock);
