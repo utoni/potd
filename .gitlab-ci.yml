@@ -3,6 +3,7 @@ stages:
   - sast
 
 build:
+  image: debian:stable
   script:
     - apt-get update -qq && apt-get install -y -qq coreutils make autoconf automake gcc pkg-config libseccomp-dev libssh-dev valgrind
     - ./autogen.sh
@@ -12,6 +13,7 @@ build:
   artifacts:
     paths:
       - ./src/potd
+      - ./config.log
 
 sast:
   image: docker:stable
