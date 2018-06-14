@@ -2,10 +2,23 @@ stages:
   - build
   - sast
 
-build:
+build-debian:
   image: debian:stable
   script:
     - apt-get update -qq && apt-get install -y -qq coreutils make autoconf automake gcc pkg-config libseccomp-dev libssh-dev valgrind
+    - ./autogen.sh
+    - ./configure
+    - make
+  stage: build
+  artifacts:
+    paths:
+      - ./src/potd
+      - ./config.log
+
+build-arch:
+  image: base/archlinux
+  script:
+    - pacman -Syu --noconfirm coreutils make autoconf automake gcc pkg-config libseccomp-dev libssh-dev valgrind
     - ./autogen.sh
     - ./configure
     - make
