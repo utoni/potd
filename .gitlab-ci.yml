@@ -17,6 +17,9 @@ build:
 
 sast:
   image: docker:stable
+  only:
+    variables:
+      - $DO_SAST
   variables:
     DOCKER_DRIVER: overlay2
   allow_failure: true
