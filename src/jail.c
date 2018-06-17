@@ -276,8 +276,8 @@ static int jail_childfn(prisoner_process *ctx)
         FATAL("Activating cgroups for pid %d", self_pid);
 
     D2("Setup network namespace for pid %d", self_pid);
-    if (setup_network_namespace("default"))
-        if (switch_network_namespace("default"))
+    if (switch_network_namespace("default"))
+        if (setup_network_namespace("default"))
             FATAL("Setup network namespace for pid %d", self_pid);
 
     caps_drop_dac_override(0);
