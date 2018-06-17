@@ -44,3 +44,10 @@ flawfinder:
     paths:
       - ./flawfinder.html
       - ./flawfinder_inputs.html
+
+cppcheck:
+  image: base/archlinux
+  stage: analysis
+  script:
+    - pacman -Syu --noconfirm cppcheck
+    - cppcheck --enable=all --inconclusive --std=posix .
