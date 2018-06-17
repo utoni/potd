@@ -11,12 +11,12 @@
 
 int log_open_colored(void)
 {
-    if (!getenv("TERM")) {
+    if (!secure_getenv("TERM")) {
         fprintf(stderr, "%s\n", "Missing TERM variable in your environment.");
         return 1;
     }
-    if (!strstr(getenv("TERM"), "linux")
-      && !strstr(getenv("TERM"), "xterm"))
+    if (!strstr(secure_getenv("TERM"), "linux")
+      && !strstr(secure_getenv("TERM"), "xterm"))
     {
         fprintf(stderr, "%s\n", "Unsupported TERM variable in your environment");
         return 1;

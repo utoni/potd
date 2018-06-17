@@ -233,7 +233,7 @@ AC_CHECK_FUNCS([open read write close malloc free memset memcpy fork unshare \
                 getpwnam getgrnam setreuid setregid \
                 wait waitpid isprint remove unlink mkdir access stat chroot chdir mount umount mknod \
                 strdup strcasecmp strncat strncpy printf fprintf getpid \
-                prctl signal signalfd fcntl getenv kill exit \
+                prctl signal signalfd fcntl secure_getenv kill exit \
                 setsockopt socket connect accept bind listen \
                 time difftime strtol strtoll getopt_long_only], [],
       [ AC_MSG_ERROR([required function not available]) ])
