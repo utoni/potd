@@ -18,7 +18,7 @@ build-debian:
 build-arch:
   image: base/archlinux
   script:
-    - pacman -Syu --noconfirm coreutils make autoconf automake gcc pkg-config libseccomp-dev libssh-dev valgrind
+    - pacman -Syu --noconfirm coreutils make autoconf automake gcc pkg-config libseccomp libssh valgrind
     - ./autogen.sh
     - ./configure
     - make

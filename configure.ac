@@ -1,3 +1,4 @@
+AC_PREREQ([2.69])
 AC_INIT(potd, 1.0, matzeton@googlemail.com)
 AC_CONFIG_HEADERS([src/config.h])
 AC_CANONICAL_TARGET
