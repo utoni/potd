@@ -12,6 +12,7 @@ typedef enum opt_name {
     OPT_ROOT,
     OPT_NETNS_RUN_DIR,
     OPT_SECCOMP_MINIMAL,
+    OPT_RUNTEST,
 
     OPT_HELP,
     OPT_MAX

@@ -883,19 +883,31 @@ size_t parse_hostport_str(const char *str, char hbuf[NI_MAXHOST],
     return siz;
 }
 
-int selfcheck_minimal_requirements(void)
+int selftest_minimal_requirements(void)
 {
     int s;
     char buf[32] = {0};
     char test[64] = {0};
 
+    N2("%s", "Selftest ..");
+
     memset(&test[0], 'A', sizeof test);
     test[sizeof test - 1] = 0;
     s = snprintf(buf, sizeof buf,  "%s", &test[0]);
     if (s != sizeof test - 1)
-        return 1;
+        goto error;
     if (buf[sizeof buf - 1] != 0)
-        return 1;
+        goto error;
 
+    if (getopt_used(OPT_RUNTEST)) {
+        N("%s", "Selftest success");
+        exit(EXIT_SUCCESS);
+    }
     return 0;
+error:
+    if (getopt_used(OPT_RUNTEST)) {
+        E("%s", "Selftest failed");
+        exit(EXIT_FAILURE);
+    }
+    return 1;
 }

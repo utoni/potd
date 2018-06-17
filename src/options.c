@@ -87,7 +87,8 @@ static struct opt options[OPT_MAX+1] = {
         "use a minimal set of blocked syscalls e.g.\n"
         "mount, umount, ptrace, kernel module syscalls\n"
         "and some io syscalls\n"
-        "(use this if you acknowledge errors on some platforms)\n"),
+        "(use this if you acknowledge errors on some platforms e.g. OpenWrt)\n"),
+    OPT_NOARG("test", "test essential daemon functions and exit\n", NULL),
 
     OPT_NOARG("help", "this\n", NULL),
     OPT(OT_INVALID, .ll = 0, NULL, NULL, NULL)

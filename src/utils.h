@@ -74,6 +74,6 @@ size_t parse_hostport(const char *str, const char *result[2],
 size_t parse_hostport_str(const char *str, char hbuf[NI_MAXHOST],
                           char sbuf[NI_MAXSERV]);
 
-int selfcheck_minimal_requirements(void);
+int selftest_minimal_requirements(void);
 
 #endif

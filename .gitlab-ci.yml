@@ -1,6 +1,7 @@
 stages:
   - build
-  - sast
+  - test
+  - analysis
 
 build-debian:
   image: debian:stable
@@ -9,6 +10,7 @@ build-debian:
     - ./autogen.sh
     - ./configure
     - make
+    - valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
   stage: build
   artifacts:
     paths:
@@ -22,7 +24,8 @@ build-arch:
     - ./autogen.sh
     - ./configure
     - make
-  stage: build
+    - valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
+  stage: test
   artifacts:
     paths:
       - ./src/potd
@@ -38,7 +41,7 @@ sast:
   allow_failure: true
   services:
     - docker:stable-dind
-  stage: build
+  stage: analysis
   script:
     - export SP_VERSION=$(echo "$CI_SERVER_VERSION" | sed 's/^\([0-9]*\)\.\([0-9]*\).*/\1-\2-stable/')
     - docker run
