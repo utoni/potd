@@ -882,3 +882,20 @@ size_t parse_hostport_str(const char *str, char hbuf[NI_MAXHOST],
 
     return siz;
 }
+
+int selfcheck_minimal_requirements(void)
+{
+    int s;
+    char buf[32] = {0};
+    char test[64] = {0};
+
+    memset(&test[0], 'A', sizeof test);
+    test[sizeof test - 1] = 0;
+    s = snprintf(buf, sizeof buf,  "%s", &test[0]);
+    if (s != sizeof test - 1)
+        return 1;
+    if (buf[sizeof buf - 1] != 0)
+        return 1;
+
+    return 0;
+}

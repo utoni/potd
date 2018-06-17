@@ -1,6 +1,7 @@
 AC_PREREQ([2.69])
 AC_INIT(potd, 1.0, matzeton@googlemail.com)
 AC_CONFIG_HEADERS([src/config.h])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
 AM_SILENT_RULES([yes])
@@ -231,7 +232,7 @@ dnl minimum required functions
 AC_CHECK_FUNCS([open read write close malloc free memset memcpy fork unshare \
                 getpwnam getgrnam setreuid setregid \
                 wait waitpid isprint remove unlink mkdir access stat chroot chdir mount umount mknod \
-                strdup strcasecmp strncat strncpy snprintf vsnprintf printf fprintf getpid \
+                strdup strcasecmp strncat strncpy printf fprintf getpid \
                 prctl signal signalfd fcntl getenv kill exit \
                 setsockopt socket connect accept bind listen \
                 time difftime strtol strtoll getopt_long_only], [],
@@ -243,6 +244,15 @@ dnl epoll functions
 AC_CHECK_FUNCS([epoll_create1 epoll_ctl epoll_pwait], [],
       [ AC_MSG_ERROR([required epoll function not available]) ])
 
+dnl C99 snprintf checks
+HW_FUNC_VSNPRINTF
+HW_FUNC_SNPRINTF
+AS_IF([test "x${hw_cv_func_snprintf}" != xyes
+       test "x${hw_cv_func_snprintf_c99}" != xyes
+       test "x${hw_cv_func_vsnprintf}" != xyes
+       test "x${hw_cv_func_vsnprintf_c99}" != xyes],
+      [ AC_MSG_ERROR([snprintf or vsnprintf missing or not C99 compatible]) ],
+      [])
 
 potd_logfile="/var/log/potd.log"
 AC_DEFINE_UNQUOTED([POTD_LOGFILE], ["$potd_logfile"],

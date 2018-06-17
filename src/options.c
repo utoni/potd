@@ -292,7 +292,7 @@ static void usage(const char *arg0, int print_copyright)
                 break;
         }
         if (has_default)
-            snprint_multilined_ljust(&spaces_long[sizeof spaces_long / 2],
+            snprint_multilined_ljust(&spaces_long[5],
                 value, buf_help + off, sizeof buf_help - off);
 
         fprintf(stderr, "%16s %s"
