@@ -51,19 +51,33 @@ dnl Some libssh versions require libssl,libcrypto,zlib.
 dnl This is because the libssh.pc file does not sets additional required shlibs.
 additional_libssh_libs=""
 
+saved_CFLAGS="$CFLAGS"
+saved_LIBS="$LIBS"
 CFLAGS="$CFLAGS $libssh_CFLAGS"
 LIBS="$LIBS $libssh_LIBS"
-
 AC_MSG_CHECKING([if libssh requires -lcrypto])
 AC_TRY_LINK([#include <libssh/libssh.h>],
       [ return ssh_init(); ], [ libssh_require_libcrypto="no" ],
                               [ libssh_require_libcrypto="yes"])
+CFLAGS="$saved_CFLAGS"
+LIBS="$saved_LIBS"
+
 AC_MSG_RESULT([${libssh_require_libcrypto}])
 AS_IF([test "x${libssh_require_libcrypto}" = xyes],
       [ additional_libssh_libs="${additional_libssh_libs} -lcrypto"
-        AC_CHECK_LIB([crypto], [RSA_new], [],
-            [AC_MSG_ERROR([libcrypto not found])])
+        LIBS="$LIBS -lcrypto"
+        AC_CHECK_LIB([crypto], [RSA_new], [ libcrypto_require_zlib="no" ],
+                                          [ libcrypto_require_zlib="yes"])
 	  ])
+
+AS_IF([test "x${libcrypto_require_zlib}" = xyes],
+      [ additional_libssh_libs="${additional_libssh_libs} -lz"
+        LIBS="$LIBS -lz"
+        AC_CHECK_LIB([z], [inflate], [],
+            [ AC_MSG_ERROR([libz not found]) ])
+        AC_CHECK_LIB([crypto], [RSA_new],
+            [ AC_MSG_ERROR([libcrypto not found]) ])
+      ])
 
 AC_MSG_CHECKING([if libssh requires -lssl])
 AC_TRY_LINK([#include <libssh/libssh.h>],
@@ -72,6 +86,7 @@ AC_TRY_LINK([#include <libssh/libssh.h>],
 AC_MSG_RESULT([${libssh_require_libssl}])
 AS_IF([test "x${libssh_require_libssl}" = xyes],
       [ additional_libssh_libs="${additional_libssh_libs} -lssl"
+        LIBS="$LIBS -lssl"
         AC_CHECK_LIB([ssl], [SSL_new], [],
             [AC_MSG_ERROR([libssl not found])])
 	  ])
@@ -81,15 +96,17 @@ AC_TRY_LINK([#include <libssh/libssh.h>],
       [ return ssh_init(); ], [ libssh_require_libz="no" ],
                               [ libssh_require_libz="yes"])
 AC_MSG_RESULT([${libssh_require_libz}])
-AS_IF([test "x${libssh_require_libz}" = xyes],
+AS_IF([test "x${libssh_require_libz}" = xyes -a "x${libcrypto_require_zlib}" != xyes],
       [ additional_libssh_libs="${additional_libssh_libs} -lz"
+        LIBS="$LIBS -lz"
         AC_CHECK_LIB([z], [inflate], [],
             [AC_MSG_ERROR([libz not found])])
       ])
 
+LIBS="$saved_LIBS $additional_libssh_libs"
 AC_CHECK_LIB([ssh], [ssh_init], [], [AC_MSG_ERROR([final link against libssh failed])])
 AC_CHECK_LIB([seccomp], [seccomp_init], [], [AC_MSG_ERROR([final link against libseccomp failed])])
-
+LIBS="$saved_LIBS $additional_libssh_libs"
 
 dnl libseccomp-dev
 PKG_CHECK_MODULES([libseccomp], [libseccomp >= 2.2.1], [],
