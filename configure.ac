@@ -19,7 +19,16 @@ AC_TYPE_SIZE_T
 AC_CHECK_TOOL([PKGCONFIG], [pkg-config], [:])
 AS_IF([test "x${PKGCONFIG}" = x], [ AC_MSG_ERROR([pkg-config not found]) ])
 
-# check for spectre mitigation
+dnl check for -std=gnu99
+CFLAGS="-std=gnu99 $CFLAGS"
+AC_MSG_CHECKING([if ${CC} supports gnu99])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
+      AC_MSG_RESULT([yes]),
+      [ AC_MSG_RESULT([no])
+        AC_MSG_ERROR([a gnu99 compatible platform is required]) ]
+      )
+
+dnl check for spectre mitigation
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -mindirect-branch=thunk"
 AC_MSG_CHECKING([if ${CC} supports -mindirect-branch=thunk spectre mitigation])
@@ -30,7 +39,7 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
 CFLAGS="$saved_CFLAGS"
 AC_SUBST([SPECTRE_MIT])
 
-# check for -fvisibility=hidden compiler support (GCC >= 4)
+dnl check for -fvisibility=hidden compiler support (GCC >= 4)
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
 AC_MSG_CHECKING([if ${CC} supports -fvisibility=hidden -fvisibility-inlines-hidden])
@@ -48,7 +57,7 @@ dnl libssh-dev
 PKG_CHECK_MODULES([libssh], [libssh >= 0.7.3], [],
       [ AC_MSG_ERROR([libssh >= 0.7.3 not found]) ])
 AC_SUBST([libssh_CFLAGS])
-AC_SUBST([libssh_LIBS])
+LIBS="$libssh_LIBS"
 dnl Some libssh versions require libssl,libcrypto,zlib.
 dnl This is because the libssh.pc file does not sets additional required shlibs.
 additional_libssh_libs=""
@@ -56,7 +65,6 @@ additional_libssh_libs=""
 saved_CFLAGS="$CFLAGS"
 saved_LIBS="$LIBS"
 CFLAGS="$CFLAGS $libssh_CFLAGS"
-LIBS="$LIBS $libssh_LIBS"
 AC_MSG_CHECKING([if libssh requires -lcrypto])
 AC_TRY_LINK([#include <libssh/libssh.h>],
       [ return ssh_init(); ], [ libssh_require_libcrypto="no" ],
@@ -114,7 +122,7 @@ dnl libseccomp-dev
 PKG_CHECK_MODULES([libseccomp], [libseccomp >= 2.2.1], [],
       [ AC_MSG_ERROR([libseccomp >= 2.2.1 not found]) ])
 AC_SUBST([libseccomp_CFLAGS])
-AC_SUBST([libseccomp_LIBS])
+LIBS="$LIBS $libseccomp_LIBS"
 
 dnl Check for valgrind
 PKG_CHECK_MODULES([valgrind], [valgrind >= 3.12.0],
@@ -123,7 +131,7 @@ PKG_CHECK_MODULES([valgrind], [valgrind >= 3.12.0],
         valgrind_enabled="yes" ],
       [ valgrind_enabled="no" ])
 AC_SUBST([valgrind_CFLAGS])
-AC_SUBST([valgrind_LIBS])
+LIBS="$LIBS $valgrind_LIBS"
 
 dnl Check for std header files
 AC_CHECK_HEADERS([stdio.h ctype.h assert.h sched.h signal.h time.h errno.h pwd.h], [],
@@ -223,6 +231,16 @@ AC_COMPILE_IFELSE([
       [ AC_MSG_RESULT([no])
         AC_MSG_ERROR([required unshare function does not work]) ])
 
+AC_MSG_CHECKING([for secure_getenv])
+AC_TRY_LINK([#include <stdlib.h>],
+      [ secure_getenv("TERM"); return 0; ],
+      [ AC_MSG_RESULT([yes])
+        getenv_func="secure_getenv" ],
+      [ AC_MSG_RESULT([no])
+        getenv_func="getenv" ])
+AC_DEFINE_UNQUOTED([GETENV_FUNC], [$getenv_func],
+      [set it to the getenv function e.g. secure_getenv or getenv])
+
 dnl Most systems require linking against libutil.so in order to get forkpty()
 AC_CHECK_FUNCS([forkpty], [],
                [AC_CHECK_LIB(util, forkpty,
@@ -233,7 +251,7 @@ AC_CHECK_FUNCS([open read write close malloc free memset memcpy fork unshare \
                 getpwnam getgrnam setreuid setregid \
                 wait waitpid isprint remove unlink mkdir access stat chroot chdir mount umount mknod \
                 strdup strcasecmp strncat strncpy printf fprintf getpid \
-                prctl signal signalfd fcntl secure_getenv kill exit \
+                prctl signal signalfd fcntl getenv kill exit \
                 setsockopt socket connect accept bind listen \
                 time difftime strtol strtoll getopt_long_only], [],
       [ AC_MSG_ERROR([required function not available]) ])
@@ -263,5 +281,7 @@ AC_DEFINE_UNQUOTED([POTD_DEFROOT], ["$potd_defroot"],
 potd_netns_run_dir="/var/run/potd-netns"
 AC_DEFINE_UNQUOTED([POTD_NETNS_RUN_DIR], ["$potd_netns_run_dir"],
       [default path to network namespace run directory])
+
+CFLAGS="-pedantic -Wall -fstrict-aliasing -D_GNU_SOURCE=1 $CFLAGS"
 
 AC_OUTPUT(Makefile src/Makefile)

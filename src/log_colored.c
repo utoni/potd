@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -11,12 +15,12 @@
 
 int log_open_colored(void)
 {
-    if (!secure_getenv("TERM")) {
+    if (!GETENV_FUNC("TERM")) {
         fprintf(stderr, "%s\n", "Missing TERM variable in your environment.");
         return 1;
     }
-    if (!strstr(secure_getenv("TERM"), "linux")
-      && !strstr(secure_getenv("TERM"), "xterm"))
+    if (!strstr(GETENV_FUNC("TERM"), "linux")
+      && !strstr(GETENV_FUNC("TERM"), "xterm"))
     {
         fprintf(stderr, "%s\n", "Unsupported TERM variable in your environment");
         return 1;
