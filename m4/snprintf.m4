@@ -50,7 +50,7 @@ AC_DEFUN([HW_FUNC_VA_COPY],
         [[va_list ap, aq; va_copy(aq, ap);]])],
       [hw_cv_func_va_copy=yes],
       [hw_cv_func_va_copy=no],
-      [hw_cv_func_va_copy=no])])
+      [hw_cv_func_va_copy=yes])])
   AS_IF([test "$hw_cv_func_va_copy" = yes],
     [AC_DEFINE([HAVE_VA_COPY], [1],
       [Define to 1 if you have the `va_copy' function or macro.])])
@@ -76,7 +76,7 @@ AC_DEFUN([HW_FUNC___VA_COPY],
         [[va_list ap, aq; __va_copy(aq, ap);]])],
       [hw_cv_func___va_copy=yes],
       [hw_cv_func___va_copy=no],
-      [hw_cv_func___va_copy=no])])
+      [hw_cv_func___va_copy=yes])])
   AS_IF([test "$hw_cv_func___va_copy" = yes],
     [AC_DEFINE([HAVE___VA_COPY], [1],
       [Define to 1 if you have the `__va_copy' function or macro.])])
@@ -124,7 +124,7 @@ AC_DEFUN([HW_FUNC_VSNPRINTF],
 				return 1;]])],
 			[hw_cv_func_vsnprintf_c99=yes],
 			[hw_cv_func_vsnprintf_c99=no],
-			[hw_cv_func_vsnprintf_c99=no])])],
+			[hw_cv_func_vsnprintf_c99=yes])])],
 		[hw_cv_func_snprintf_c99=no])
 	  AS_IF([test "$hw_cv_func_vsnprintf_c99" = yes],
 		[AC_DEFINE([HAVE_VSNPRINTF], [1],
@@ -179,7 +179,7 @@ AC_DEFUN([HW_FUNC_SNPRINTF],
 				return 1;]])],
 			[hw_cv_func_snprintf_c99=yes],
 			[hw_cv_func_snprintf_c99=no],
-			[hw_cv_func_snprintf_c99=no])])],
+			[hw_cv_func_snprintf_c99=yes])])],
 		[hw_cv_func_snprintf_c99=no])
   else
       hw_cv_func_snprintf_c99=no

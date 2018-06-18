@@ -20,7 +20,7 @@ AC_CHECK_TOOL([PKGCONFIG], [pkg-config], [:])
 AS_IF([test "x${PKGCONFIG}" = x], [ AC_MSG_ERROR([pkg-config not found]) ])
 
 dnl check for -std=gnu99
-CFLAGS="-std=gnu99 $CFLAGS"
+CFLAGS="-pedantic -Wall -std=gnu99 -D_GNU_SOURCE=1 $CFLAGS"
 AC_MSG_CHECKING([if ${CC} supports gnu99])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
       AC_MSG_RESULT([yes]),
@@ -33,22 +33,27 @@ saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -mindirect-branch=thunk"
 AC_MSG_CHECKING([if ${CC} supports -mindirect-branch=thunk spectre mitigation])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
-      [ AC_MSG_RESULT([yes])
-        SPECTRE_MIT="-mindirect-branch=thunk" ],
-        AC_MSG_RESULT([no]))
-CFLAGS="$saved_CFLAGS"
-AC_SUBST([SPECTRE_MIT])
+      [ AC_MSG_RESULT([yes]) ],
+      [ AC_MSG_RESULT([no])
+        CFLAGS="$saved_CFLAGS" ])
+
+dnl check for -fstrict-aliasing compilter support
+saved_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -fstrict-aliasing"
+AC_MSG_CHECKING([if ${CC} supports -fstrict-aliasing])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
+      [ AC_MSG_RESULT([yes]) ],
+      [ AC_MSG_RESULT([no])
+        CFLAGS="$saved_CFLAGS" ])
 
 dnl check for -fvisibility=hidden compiler support (GCC >= 4)
 saved_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
-AC_MSG_CHECKING([if ${CC} supports -fvisibility=hidden -fvisibility-inlines-hidden])
+CFLAGS="$CFLAGS -fvisibility=hidden"
+AC_MSG_CHECKING([if ${CC} supports -fvisibility=hidden])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
-      [ AC_MSG_RESULT([yes])
-        SYMBOL_VISIBILITY="-fvisibility=hidden" ],
-        AC_MSG_RESULT([no]))
-CFLAGS="$saved_CFLAGS"
-AC_SUBST([SYMBOL_VISIBILITY])
+      [ AC_MSG_RESULT([yes]) ],
+      [ AC_MSG_RESULT([no])
+        CFLAGS="$saved_CFLAGS" ])
 
 AX_PTHREAD([],[ AC_MSG_ERROR([pthread required and not found]) ])
 LIBS="$PTHREAD_LIBS $LIBS"
@@ -89,7 +94,15 @@ AS_IF([test "x${libcrypto_require_zlib}" = xyes],
         LIBS="$LIBS -lz"
         AC_CHECK_LIB([z], [inflate], [],
             [ AC_MSG_ERROR([libz not found]) ])
-        AC_CHECK_LIB([crypto], [RSA_new],
+        AC_CHECK_LIB([crypto], [RSA_free], [ libcrypto_require_libdl="no" ],
+                                           [ libcrypto_require_libdl="yes"])
+      ])
+AS_IF([test "x${libcrypto_require_libdl}" = xyes],
+      [ additional_libssh_libs="${additional_libssh_libs} -ldl"
+        LIBS="$LIBS -ldl"
+        AC_CHECK_LIB([dl], [dlopen], [],
+            [ AC_MSG_ERROR([libdl not found]) ])
+        AC_CHECK_LIB([crypto], [RSA_generate_key], [],
             [ AC_MSG_ERROR([libcrypto not found]) ])
       ])
 
@@ -101,9 +114,18 @@ AC_MSG_RESULT([${libssh_require_libssl}])
 AS_IF([test "x${libssh_require_libssl}" = xyes],
       [ additional_libssh_libs="${additional_libssh_libs} -lssl"
         LIBS="$LIBS -lssl"
-        AC_CHECK_LIB([ssl], [SSL_new], [],
-            [AC_MSG_ERROR([libssl not found])])
+        AC_CHECK_LIB([ssl], [SSL_new], [ libssl_require_libdl="no" ],
+                                       [ libssl_require_libdl="yes"])
 	  ])
+
+AS_IF([test "x${libssl_require_libdl}" = xyes],
+      [ additional_libssh_libs="${additional_libssh_libs} -ldl"
+        LIBS="$LIBS -ldl"
+        AC_CHECK_LIB([dl], [dlopen], [],
+            [ AC_MSG_ERROR([libdl not found]) ])
+        AC_CHECK_LIB([ssl], [SSL_free], [],
+            [ AC_MSG_ERROR([libssl not found]) ])
+      ])
 
 AC_MSG_CHECKING([if libssh requires -lz])
 AC_TRY_LINK([#include <libssh/libssh.h>],
@@ -118,7 +140,18 @@ AS_IF([test "x${libssh_require_libz}" = xyes -a "x${libcrypto_require_zlib}" != 
       ])
 
 LIBS="$saved_LIBS $additional_libssh_libs"
-AC_CHECK_LIB([ssh], [ssh_init], [], [AC_MSG_ERROR([final link against libssh failed])])
+AC_CHECK_LIB([ssh], [ssh_init], [ libssh_require_gssapi="no" ],
+                                [ libssh_require_gssapi="yes"])
+AS_IF([test "x${libssh_require_gssapi}" = xyes],
+      [ saved_LIBS="$LIBS"
+        LIBS="$LIBS -lgssapi"
+        AC_CHECK_LIB([gssapi], [gss_init_sec_context], [],
+            [ AC_MSG_ERROR([no usable gssapi found]) ])
+        AC_CHECK_LIB([ssh], [ssh_free],
+                     [ AC_MSG_ERROR([final link against libssh failed]) ])
+      ])
+
+
 AC_CHECK_LIB([seccomp], [seccomp_init], [], [AC_MSG_ERROR([final link against libseccomp failed])])
 LIBS="$saved_LIBS $additional_libssh_libs"
 
@@ -285,7 +318,5 @@ AC_DEFINE_UNQUOTED([POTD_DEFROOT], ["$potd_defroot"],
 potd_netns_run_dir="/var/run/potd-netns"
 AC_DEFINE_UNQUOTED([POTD_NETNS_RUN_DIR], ["$potd_netns_run_dir"],
       [default path to network namespace run directory])
-
-CFLAGS="-pedantic -Wall -fstrict-aliasing -D_GNU_SOURCE=1 $CFLAGS"
 
 AC_OUTPUT(Makefile src/Makefile)
