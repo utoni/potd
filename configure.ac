@@ -50,6 +50,10 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
 CFLAGS="$saved_CFLAGS"
 AC_SUBST([SYMBOL_VISIBILITY])
 
+AX_PTHREAD([],[ AC_MSG_ERROR([pthread required and not found]) ])
+LIBS="$PTHREAD_LIBS $LIBS"
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+
 AC_CHECK_LIB([socket], [connect])
 AC_CHECK_LIB([pthread], [pthread_create])
 
@@ -131,7 +135,7 @@ PKG_CHECK_MODULES([valgrind], [valgrind >= 3.12.0],
         valgrind_enabled="yes" ],
       [ valgrind_enabled="no" ])
 AC_SUBST([valgrind_CFLAGS])
-LIBS="$LIBS $valgrind_LIBS"
+dnl LIBS="$LIBS $valgrind_LIBS"
 
 dnl Check for std header files
 AC_CHECK_HEADERS([stdio.h ctype.h assert.h sched.h signal.h time.h errno.h pwd.h], [],
