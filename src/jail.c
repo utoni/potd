@@ -304,7 +304,7 @@ static int jail_childfn(prisoner_process *ctx)
                         S_IROTH|S_IXOTH);
     if (s && errno != EEXIST)
         FATAL("Create directory '%s'", path_dev);
-    if (!dir_is_mountpoint(path_dev) && mount_dev(path_dev))
+    if (!path_is_mountpoint(path_dev) && mount_dev(path_dev))
         FATAL("Mount devtmpfs to '%s%s'", ctx->newroot, path_dev);
 
     D2("Mounting devpts to '%s%s'", ctx->newroot, path_devpts);
@@ -313,7 +313,7 @@ static int jail_childfn(prisoner_process *ctx)
                            S_IROTH|S_IXOTH);
     if (s && errno != EEXIST)
         FATAL("Create directory '%s'", path_devpts);
-    if (!dir_is_mountpoint(path_devpts) && mount_pts(path_devpts))
+    if (!path_is_mountpoint(path_devpts) && mount_pts(path_devpts))
         FATAL("Mount devpts to '%s%s'", ctx->newroot, path_devpts);
 
     D2("Mounting proc to '%s%s'", ctx->newroot, path_proc);

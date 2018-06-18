@@ -20,6 +20,7 @@
 #include <sys/prctl.h>
 #include <sys/mount.h>
 #include <linux/limits.h>
+#include <libgen.h>
 #include <assert.h>
 
 #include "utils.h"
@@ -349,22 +350,36 @@ int safe_chroot(const char *newroot)
     return 0;
 }
 
-int dir_is_mountpoint(const char *path)
+int path_is_mountpoint(const char *path)
 {
     struct stat current = {0}, parent = {0};
     size_t plen = strnlen(path, PATH_MAX);
     char parent_path[plen + 4];
+    char *dirc, *dname;
 
     if (stat(path, &current))
         goto error;
-    strncpy(parent_path, path, plen);
-    parent_path[plen] = '/';
-    parent_path[plen+1] = '.';
-    parent_path[plen+2] = '.';
-    parent_path[plen+3] = 0;
 
-    if (stat(parent_path, &parent))
-        goto error;
+    if (S_ISREG(current.st_mode)) {
+        dirc = strdup(path);
+        assert(dirc);
+        dname = dirname(dirc);
+
+        if (stat(dname, &parent)) {
+            free(dirc);
+            goto error;
+        }
+        free(dirc);
+    } else {
+        strncpy(parent_path, path, plen);
+        parent_path[plen] = '/';
+        parent_path[plen+1] = '.';
+        parent_path[plen+2] = '.';
+        parent_path[plen+3] = 0;
+
+        if (stat(parent_path, &parent))
+            goto error;
+    }
 
     return current.st_dev != parent.st_dev;
 error:
@@ -461,6 +476,11 @@ int setup_network_namespace(const char *name)
         }
     }
 
+    if (path_is_mountpoint(netns_path)) {
+        N2("Network namespace '%s' already mounted, doing nothing.", netns_path);
+        return 0;
+    }
+
     while (mount("", getopt_str(OPT_NETNS_RUN_DIR), "none",
         MS_SHARED|MS_REC, NULL))
     {
@@ -517,7 +537,7 @@ int switch_network_namespace(const char *name)
         getopt_str(OPT_NETNS_RUN_DIR), name);
     netns = open(net_path, O_RDONLY | O_CLOEXEC);
     if (netns < 0) {
-        E_STRERR("Cannot open network namespace '%s'", name);
+        E_STRERR("Open network namespace '%s'", name);
         return 1;
     }
 

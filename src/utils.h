@@ -34,7 +34,7 @@ int change_default_user_group(void);
 
 int safe_chroot(const char *newroot);
 
-int dir_is_mountpoint(const char *path);
+int path_is_mountpoint(const char *path);
 
 void chk_chroot(void);
 
