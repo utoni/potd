@@ -9,7 +9,10 @@ build-debian:
     - apt-get update -qq && apt-get install -y -qq coreutils make autoconf automake gcc pkg-config libseccomp-dev libssh-dev valgrind
     - ./autogen.sh
     - ./configure
-    - make
+    - make V=s
+    - valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
+    - CFLAGS="-static $CFLAGS" LDFLAGS="-static $LDFLAGS" ./configure
+    - make V=s
     - valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
   stage: build
   artifacts:
@@ -23,7 +26,10 @@ build-arch:
     - pacman -Syu --noconfirm coreutils make autoconf automake gcc pkg-config libseccomp libssh valgrind
     - ./autogen.sh
     - ./configure
-    - make
+    - make V=s
+    - valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
+    - CFLAGS="-static $CFLAGS" LDFLAGS="-static $LDFLAGS" ./configure
+    - make V=s
     - valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
   stage: test
   artifacts:
