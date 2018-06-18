@@ -108,6 +108,7 @@ static const int jail_allowed_syscalls[] = {
     SCMP_SYS(close), SCMP_SYS(wait4),
     SCMP_SYS(sigprocmask), SCMP_SYS(tgkill), SCMP_SYS(gettid), SCMP_SYS(set_tls),
     SCMP_SYS(fork), SCMP_SYS(clone), SCMP_SYS(execve),
+    SCMP_SYS(socket),
     SCMP_SYS(mmap), SCMP_SYS(mmap2), SCMP_SYS(brk), SCMP_SYS(madvise),
     SCMP_SYS(mprotect), SCMP_SYS(munmap), SCMP_SYS(futex),
     SCMP_SYS(open), SCMP_SYS(openat), SCMP_SYS(fstat), SCMP_SYS(fstat64),

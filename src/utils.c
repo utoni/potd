@@ -22,6 +22,9 @@
 #include <linux/limits.h>
 #include <libgen.h>
 #include <assert.h>
+#ifdef HAVE_VALGRIND
+#include <valgrind.h>
+#endif
 
 #include "utils.h"
 #include "log.h"
@@ -477,8 +480,8 @@ int setup_network_namespace(const char *name)
     }
 
     if (path_is_mountpoint(netns_path)) {
-        N2("Network namespace '%s' already mounted, doing nothing.", netns_path);
-        return 0;
+        W2("Network namespace '%s' already mounted, doing nothing.", netns_path);
+        return 1;
     }
 
     while (mount("", getopt_str(OPT_NETNS_RUN_DIR), "none",
@@ -544,6 +547,13 @@ int switch_network_namespace(const char *name)
     if (setns(netns, CLONE_NEWNET) < 0) {
         E_STRERR("Setting the network namespace '%s'", name);
         close(netns);
+#ifdef HAVE_VALGRIND
+        /* older valgrind versions dont support the setns syscall */
+        if (RUNNING_ON_VALGRIND) {
+            W2("%s", "Running on valgrind, using unshare instead of setns ..");
+            return unshare(CLONE_NEWNET) != 0;
+        }
+#endif
         return 1;
     }
     close(netns);
