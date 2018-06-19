@@ -59,117 +59,6 @@ AX_PTHREAD([],[ AC_MSG_ERROR([pthread required and not found]) ])
 LIBS="$PTHREAD_LIBS $LIBS"
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
-AC_CHECK_LIB([socket], [connect])
-AC_CHECK_LIB([pthread], [pthread_create])
-
-dnl libssh-dev
-PKG_CHECK_MODULES([libssh], [libssh >= 0.7.3], [],
-      [ AC_MSG_ERROR([libssh >= 0.7.3 not found]) ])
-AC_SUBST([libssh_CFLAGS])
-LIBS="$libssh_LIBS"
-dnl Some libssh versions require libssl,libcrypto,zlib.
-dnl This is because the libssh.pc file does not sets additional required shlibs.
-additional_libssh_libs=""
-
-saved_CFLAGS="$CFLAGS"
-saved_LIBS="$LIBS"
-CFLAGS="$CFLAGS $libssh_CFLAGS"
-AC_MSG_CHECKING([if libssh requires -lcrypto])
-AC_TRY_LINK([#include <libssh/libssh.h>],
-      [ return ssh_init(); ], [ libssh_require_libcrypto="no" ],
-                              [ libssh_require_libcrypto="yes"])
-CFLAGS="$saved_CFLAGS"
-LIBS="$saved_LIBS"
-
-AC_MSG_RESULT([${libssh_require_libcrypto}])
-AS_IF([test "x${libssh_require_libcrypto}" = xyes],
-      [ additional_libssh_libs="${additional_libssh_libs} -lcrypto"
-        LIBS="$LIBS -lcrypto"
-        AC_CHECK_LIB([crypto], [RSA_new], [ libcrypto_require_zlib="no" ],
-                                          [ libcrypto_require_zlib="yes"])
-	  ])
-
-AS_IF([test "x${libcrypto_require_zlib}" = xyes],
-      [ additional_libssh_libs="${additional_libssh_libs} -lz"
-        LIBS="$LIBS -lz"
-        AC_CHECK_LIB([z], [inflate], [],
-            [ AC_MSG_ERROR([libz not found]) ])
-        AC_CHECK_LIB([crypto], [RSA_free], [ libcrypto_require_libdl="no" ],
-                                           [ libcrypto_require_libdl="yes"])
-      ])
-AS_IF([test "x${libcrypto_require_libdl}" = xyes],
-      [ additional_libssh_libs="${additional_libssh_libs} -ldl"
-        LIBS="$LIBS -ldl"
-        AC_CHECK_LIB([dl], [dlopen], [],
-            [ AC_MSG_ERROR([libdl not found]) ])
-        AC_CHECK_LIB([crypto], [RSA_generate_key], [],
-            [ AC_MSG_ERROR([libcrypto not found]) ])
-      ])
-
-AC_MSG_CHECKING([if libssh requires -lssl])
-AC_TRY_LINK([#include <libssh/libssh.h>],
-      [ return ssh_init(); ], [ libssh_require_libssl="no" ],
-                              [ libssh_require_libssl="yes"])
-AC_MSG_RESULT([${libssh_require_libssl}])
-AS_IF([test "x${libssh_require_libssl}" = xyes],
-      [ additional_libssh_libs="${additional_libssh_libs} -lssl"
-        LIBS="$LIBS -lssl"
-        AC_CHECK_LIB([ssl], [SSL_new], [ libssl_require_libdl="no" ],
-                                       [ libssl_require_libdl="yes"])
-	  ])
-
-AS_IF([test "x${libssl_require_libdl}" = xyes],
-      [ additional_libssh_libs="${additional_libssh_libs} -ldl"
-        LIBS="$LIBS -ldl"
-        AC_CHECK_LIB([dl], [dlopen], [],
-            [ AC_MSG_ERROR([libdl not found]) ])
-        AC_CHECK_LIB([ssl], [SSL_free], [],
-            [ AC_MSG_ERROR([libssl not found]) ])
-      ])
-
-AC_MSG_CHECKING([if libssh requires -lz])
-AC_TRY_LINK([#include <libssh/libssh.h>],
-      [ return ssh_init(); ], [ libssh_require_libz="no" ],
-                              [ libssh_require_libz="yes"])
-AC_MSG_RESULT([${libssh_require_libz}])
-AS_IF([test "x${libssh_require_libz}" = xyes -a "x${libcrypto_require_zlib}" != xyes],
-      [ additional_libssh_libs="${additional_libssh_libs} -lz"
-        LIBS="$LIBS -lz"
-        AC_CHECK_LIB([z], [inflate], [],
-            [AC_MSG_ERROR([libz not found])])
-      ])
-
-LIBS="$saved_LIBS $additional_libssh_libs"
-AC_CHECK_LIB([ssh], [ssh_init], [ libssh_require_gssapi="no" ],
-                                [ libssh_require_gssapi="yes"])
-AS_IF([test "x${libssh_require_gssapi}" = xyes],
-      [ saved_LIBS="$LIBS"
-        LIBS="$LIBS -lgssapi"
-        AC_CHECK_LIB([gssapi], [gss_init_sec_context], [],
-            [ AC_MSG_ERROR([no usable gssapi found]) ])
-        AC_CHECK_LIB([ssh], [ssh_free],
-                     [ AC_MSG_ERROR([final link against libssh failed]) ])
-      ])
-
-
-AC_CHECK_LIB([seccomp], [seccomp_init], [], [AC_MSG_ERROR([final link against libseccomp failed])])
-LIBS="$saved_LIBS $additional_libssh_libs"
-
-dnl libseccomp-dev
-PKG_CHECK_MODULES([libseccomp], [libseccomp >= 2.2.1], [],
-      [ AC_MSG_ERROR([libseccomp >= 2.2.1 not found]) ])
-AC_SUBST([libseccomp_CFLAGS])
-LIBS="$LIBS $libseccomp_LIBS"
-
-dnl Check for valgrind
-PKG_CHECK_MODULES([valgrind], [valgrind >= 3.12.0],
-      [ AC_DEFINE([HAVE_VALGRIND], [1],
-        [Define to 1 if you have/want valgrind support])
-        valgrind_enabled="yes" ],
-      [ valgrind_enabled="no" ])
-AC_SUBST([valgrind_CFLAGS])
-dnl LIBS="$LIBS $valgrind_LIBS"
-
 dnl Check for std header files
 AC_CHECK_HEADERS([stdio.h ctype.h assert.h sched.h signal.h time.h errno.h pwd.h], [],
       [ AC_MSG_ERROR([required std header not available]) ])
@@ -182,6 +71,153 @@ AC_CHECK_HEADERS([libutil.h pthread.h syslog.h sys/prctl.h linux/limits.h \
 
 dnl Check for GAI header
 AC_CHECK_HEADERS([netdb.h])
+
+dnl minimum required functions
+AC_CHECK_FUNCS([open read write close malloc free memset memcpy fork unshare \
+                getpwnam getgrnam setreuid setregid \
+                wait waitpid isprint remove unlink mkdir access stat chroot chdir mount umount mknod \
+                strdup strcasecmp strncat strncpy printf fprintf getpid \
+                prctl signal signalfd fcntl getenv kill exit \
+                setsockopt socket connect accept bind listen \
+                time difftime strtol strtoll getopt_long_only], [],
+      [ AC_MSG_ERROR([required function not available]) ])
+dnl GAI functions
+AC_CHECK_FUNCS([getaddrinfo getnameinfo freeaddrinfo], [],
+      [ AC_MSG_ERROR([required GAI function not available]) ])
+dnl epoll functions
+AC_CHECK_FUNCS([epoll_create1 epoll_ctl epoll_pwait], [],
+      [ AC_MSG_ERROR([required epoll function not available]) ])
+
+AC_CHECK_LIB([socket], [connect])
+AC_CHECK_LIB([pthread], [pthread_create])
+
+dnl libssh-dev
+PKG_CHECK_MODULES([libssh], [libssh >= 0.7.3], [],
+      [ AC_MSG_ERROR([pkg-config: libssh >= 0.7.3 not found]) ])
+CFLAGS="$CFLAGS $libssh_CFLAGS"
+LIBS="$LIBS $libssh_LIBS"
+dnl Some libssh versions require libssl,libcrypto,zlib,libdl.
+AC_MSG_CHECKING([if libssh requires -lcrypto])
+AC_TRY_LINK([#include <libssh/libssh.h>],
+      [ return ssh_init(); ], [ libssh_require_libcrypto="no" ],
+                              [ libssh_require_libcrypto="yes"])
+
+AC_MSG_RESULT([${libssh_require_libcrypto}])
+AS_IF([test "x${libssh_require_libcrypto}" = xyes],
+      [ saved_CFLAGS="$CFLAGS"
+        saved_LIBS="$LIBS"
+        PKG_CHECK_MODULES([libcrypto], [libcrypto >= 1.0.2], [],
+            [ AC_MSG_ERROR([pkg-config: libcrypto >= 1.0.2 not found]) ])
+        AC_CHECK_LIB([crypto], [RSA_new], [ libcrypto_require_zlib="no" ],
+                                          [ libcrypto_require_zlib="yes"])
+        CFLAGS="$saved_CFLAGS $libcrypto_CFLAGS"
+        LIBS="$saved_LIBS $libcrypto_LIBS"
+	  ])
+
+AS_IF([test "x${libcrypto_require_zlib}" = xyes],
+      [ saved_CFLAGS="$CFLAGS"
+        saved_LIBS="$LIBS"
+        PKG_CHECK_MODULES([zlib], [zlib >= 1.2.8], [],
+            [ AC_MSG_ERROR([pkg-config: zlib >= 1.2.8 not found]) ])
+        AC_CHECK_LIB([z], [inflate], [],
+            [ AC_MSG_ERROR([libz link failed]) ])
+        AC_CHECK_LIB([crypto], [RSA_free], [ libcrypto_require_libdl="no" ],
+                                           [ libcrypto_require_libdl="yes"])
+        CFLAGS="$saved_CFLAGS $zlib_CFLAGS"
+        LIBS="$saved_LIBS $zlib_LIBS"
+      ])
+
+AS_IF([test "x${libcrypto_require_libdl}" = xyes],
+      [ saved_CFLAGS="$CFLAGS"
+        saved_LIBS="$LIBS"
+        AC_CHECK_LIB([dl], [dlopen], [],
+            [ AC_MSG_ERROR([libdl link failed]) ])
+        AC_CHECK_LIB([crypto], [RSA_generate_key], [],
+            [ AC_MSG_ERROR([libcrypto link failed]) ])
+        CFLAGS="$saved_CFLAGS"
+        LIBS="$saved_LIBS -dl"
+        libdl_found="yes"
+      ])
+
+AC_MSG_CHECKING([if libssh requires -lssl])
+AC_TRY_LINK([#include <libssh/libssh.h>],
+      [ return ssh_init(); ], [ libssh_require_libssl="no" ],
+                              [ libssh_require_libssl="yes"])
+AC_MSG_RESULT([${libssh_require_libssl}])
+AS_IF([test "x${libssh_require_libssl}" = xyes],
+      [ saved_CFLAGS="$CFLAGS"
+        saved_LIBS="$LIBS"
+        PKG_CHECK_MODULES([libssl], [libssl >= 1.0.2l], [],
+            [ AC_MSG_ERROR([pkg-config: libssl >= 1.0.2l not found]) ])
+        CFLAGS="$saved_CFLAGS $libssl_CFLAGS"
+        LIBS="$saved_LIBS $libssl_LIBS"
+        AC_CHECK_LIB([ssl], [SSL_new], [ libssl_require_libdl="no" ],
+                                       [ libssl_require_libdl="yes"])
+	  ])
+
+AS_IF([test "x${libssl_require_libdl}" = xyes
+       test "x${libdl_found}" != xyes],
+      [ saved_CFLAGS="$CFLAGS"
+        saved_LIBS="$LIBS"
+        AC_CHECK_LIB([dl], [dlopen], [],
+            [ AC_MSG_ERROR([libdl link failed]) ])
+        AC_CHECK_LIB([ssl], [SSL_free], [],
+            [ AC_MSG_ERROR([libssl link failed]) ])
+        CFLAGS="$saved_CFLAGS"
+        LIBS="$saved_LIBS -ldl"
+      ])
+
+AC_MSG_CHECKING([if libssh requires -lz])
+AC_TRY_LINK([#include <libssh/libssh.h>],
+      [ return ssh_init(); ], [ libssh_require_libz="no" ],
+                              [ libssh_require_libz="yes"])
+AC_MSG_RESULT([${libssh_require_libz}])
+AS_IF([test "x${libssh_require_libz}" = xyes -a "x${libcrypto_require_zlib}" != xyes],
+      [ saved_CFLAGS="$CFLAGS"
+        saved_LIBS="$LIBS"
+        PKG_CHECK_MODULES([zlib], [zlib >= 1.2.8], [],
+            [ AC_MSG_ERROR([pkg-config: zlib >= 1.2.8 not found]) ])
+        AC_CHECK_LIB([z], [inflate], [],
+            [AC_MSG_ERROR([zlib link failed])])
+        CFLAGS="$saved_CFLAGS $zlib_CFLAGS"
+        LIBS="$saved_LIBS $zlib_LIBS"
+      ])
+
+AC_CHECK_LIB([ssh], [ssh_init], [ libssh_require_gssapi="no" ],
+                                [ libssh_require_gssapi="yes"])
+AC_MSG_CHECKING([if libssh requires -lkrb5-gssapi])
+AC_MSG_RESULT([$libssh_require_gssapi])
+AS_IF([test "x${libssh_require_gssapi}" = xyes],
+      [ saved_CFLAGS="$CFLAGS"
+        saved_LIBS="$LIBS"
+        PKG_CHECK_MODULES([gssapi], [krb5-gssapi >= 1.15], [],
+            [ AC_MSG_ERROR([pkg-config: krb5-gssapi >= 1.15 not found]) ])
+        CFLAGS="$saved_CFLAGS $gssapi_CFLAGS "
+        LIBS="$saved_LIBS $gssapi_LIBS"
+        AC_CHECK_LIB([krb5-gssapi], [gss_init_sec_context], [],
+            [ AC_MSG_ERROR([krb5-gssapi link failed]) ])
+        AC_CHECK_LIB([ssh], [ssh_free],
+            [ AC_MSG_ERROR([final link against libssh failed]) ])
+        CFLAGS="$saved_CFLAGS $gssapi_CFLAGS"
+        LIBS="$saved_LIBS $gssapi_LIBS"
+      ])
+
+dnl libseccomp-dev
+PKG_CHECK_MODULES([libseccomp], [libseccomp >= 2.2.1], [],
+      [ AC_MSG_ERROR([pkg-config: libseccomp >= 2.2.1 not found]) ])
+saved_CFLAGS="$CFLAGS $libseccomp_CFLAGS"
+saved_LIBS="$LIBS $libseccomp_LIBS"
+AC_CHECK_LIB([seccomp], [seccomp_init], [], [AC_MSG_ERROR([final link against libseccomp failed])])
+CFLAGS="$saved_CFLAGS"
+LIBS="$saved_LIBS"
+
+dnl Check for valgrind
+PKG_CHECK_MODULES([valgrind], [valgrind >= 3.12.0],
+      [ AC_DEFINE([HAVE_VALGRIND], [1],
+        [Define to 1 if you have/want valgrind support])
+        valgrind_enabled="yes" ],
+      [ valgrind_enabled="no" ])
+CFLAGS="$CFLAGS $valgrind_CFLAGS"
 
 AC_MSG_CHECKING([working time])
 AC_COMPILE_IFELSE([
@@ -283,21 +319,6 @@ AC_CHECK_FUNCS([forkpty], [],
                [AC_CHECK_LIB(util, forkpty,
                [LIBS="-lutil $LIBS"
                 AC_DEFINE(HAVE_FORKPTY)])])
-dnl minimum required functions
-AC_CHECK_FUNCS([open read write close malloc free memset memcpy fork unshare \
-                getpwnam getgrnam setreuid setregid \
-                wait waitpid isprint remove unlink mkdir access stat chroot chdir mount umount mknod \
-                strdup strcasecmp strncat strncpy printf fprintf getpid \
-                prctl signal signalfd fcntl getenv kill exit \
-                setsockopt socket connect accept bind listen \
-                time difftime strtol strtoll getopt_long_only], [],
-      [ AC_MSG_ERROR([required function not available]) ])
-dnl GAI functions
-AC_CHECK_FUNCS([getaddrinfo getnameinfo freeaddrinfo], [],
-      [ AC_MSG_ERROR([required GAI function not available]) ])
-dnl epoll functions
-AC_CHECK_FUNCS([epoll_create1 epoll_ctl epoll_pwait], [],
-      [ AC_MSG_ERROR([required epoll function not available]) ])
 
 dnl C99 snprintf checks
 HW_FUNC_VSNPRINTF
