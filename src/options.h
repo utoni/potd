@@ -11,6 +11,9 @@ typedef enum opt_name {
     OPT_JAIL,
     OPT_ROOT,
     OPT_NETNS_RUN_DIR,
+    OPT_SSH_RUN_DIR,
+    OPT_CHUSER,
+    OPT_CHGROUP,
     OPT_SECCOMP_MINIMAL,
     OPT_RUNTEST,
 

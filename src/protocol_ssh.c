@@ -1,16 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <poll.h>
+#include <pwd.h>
+#include <linux/limits.h>
 #include <libssh/callbacks.h>
 #include <libssh/server.h>
 
 #include "protocol_ssh.h"
 #include "protocol.h"
 #include "pseccomp.h"
+#include "options.h"
 #include "utils.h"
 #include "log.h"
 
@@ -20,6 +24,9 @@
 #endif
 
 static int version_logged = 0;
+static const char rsa_key_suf[] = "ssh_host_rsa_key";
+static const char dsa_key_suf[] = "ssh_host_dsa_key";
+static const char ecdsa_key_suf[] = "ssh_host_ecdsa_key";
 
 typedef struct ssh_data {
     ssh_bind sshbind;
@@ -185,13 +192,14 @@ int ssh_on_shutdown(protocol_ctx *ctx)
 static int set_default_keys(ssh_bind sshbind, int rsa_already_set,
                              int dsa_already_set, int ecdsa_already_set)
 {
-    const char rsa_key[] = "./ssh_host_rsa_key";
-    const char dsa_key[] = "./ssh_host_dsa_key";
-    const char ecdsa_key[] = "./ssh_host_ecdsa_key";
+    char path[PATH_MAX];
 
     if (!rsa_already_set) {
-        if (access(rsa_key, R_OK)) {
-            E_STRERR("RSA key '%s' inaccessible", rsa_key);
+        snprintf(path, sizeof path, "%s/%s", getopt_str(OPT_SSH_RUN_DIR),
+            rsa_key_suf);
+        D2("RSA key path: '%s'", path);
+        if (access(path, R_OK)) {
+            E_STRERR("RSA key '%s' inaccessible", path);
             return 1;
         }
         if (ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_RSAKEY,
@@ -201,8 +209,11 @@ static int set_default_keys(ssh_bind sshbind, int rsa_already_set,
         }
     }
     if (!dsa_already_set) {
-        if (access(dsa_key, R_OK)) {
-            W_STRERR("Access DSA key '%s'", dsa_key);
+        snprintf(path, sizeof path, "%s/%s", getopt_str(OPT_SSH_RUN_DIR),
+            dsa_key_suf);
+        D2("DSA key path: '%s'", path);
+        if (access(path, R_OK)) {
+            W_STRERR("Access DSA key '%s'", path);
         } else
         if (ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_DSAKEY,
                                  "./ssh_host_dsa_key"))
@@ -212,8 +223,11 @@ static int set_default_keys(ssh_bind sshbind, int rsa_already_set,
         }
     }
     if (!ecdsa_already_set) {
-        if (access(ecdsa_key, R_OK)) {
-            W_STRERR("Access ECDSA key '%s'", ecdsa_key);
+        snprintf(path, sizeof path, "%s/%s", getopt_str(OPT_SSH_RUN_DIR),
+            ecdsa_key_suf);
+        D2("ECDSA key path: '%s'", path);
+        if (access(path, R_OK)) {
+            W_STRERR("Access ECDSA key '%s'", path);
         } else
         if (ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_ECDSAKEY,
                                  "./ssh_host_ecdsa_key"))
@@ -227,23 +241,66 @@ static int set_default_keys(ssh_bind sshbind, int rsa_already_set,
 
 static int gen_default_keys(void)
 {
+    char path[PATH_MAX];
+    char cmd[BUFSIZ];
     int s = 0;
+    struct passwd *pwd;
 
-    if (gen_export_sshkey(SSH_KEYTYPE_RSA, 1024, "./ssh_host_rsa_key")) {
+    errno = 0;
+    pwd = getpwnam(getopt_str(OPT_CHUSER));
+    if (mkdir(getopt_str(OPT_SSH_RUN_DIR), R_OK|W_OK|X_OK) && errno == ENOENT) {
+        if (chmod(getopt_str(OPT_SSH_RUN_DIR), S_IRWXU))
+            return 1;
+        if (!pwd)
+            return 1;
+        if (chown(getopt_str(OPT_SSH_RUN_DIR), pwd->pw_uid, pwd->pw_gid))
+            return 1;
+    }
+
+    snprintf(path, sizeof path, "%s/%s", getopt_str(OPT_SSH_RUN_DIR),
+        rsa_key_suf);
+    if (gen_export_sshkey(SSH_KEYTYPE_RSA, 1024, path)) {
         W("libssh %s key generation failed, using fallback ssh-keygen", "RSA");
-        remove("./ssh_host_rsa_key");
-        s |= system("ssh-keygen -t rsa -b 1024 -f ./ssh_host_rsa_key -N '' >/dev/null 2>/dev/null");
+        remove(path);
+        if (snprintf(cmd, sizeof cmd, "ssh-keygen -t rsa -b 1024 -f %s -N '' "
+            ">/dev/null 2>/dev/null", path) > 0)
+        {
+            s |= system(cmd);
+        } else s++;
     }
-    if (gen_export_sshkey(SSH_KEYTYPE_DSS, 1024, "./ssh_host_dsa_key")) {
+    chmod(path, S_IRWXU);
+    if (pwd)
+        chown(path, pwd->pw_uid, pwd->pw_gid);
+
+    snprintf(path, sizeof path, "%s/%s", getopt_str(OPT_SSH_RUN_DIR),
+        dsa_key_suf);
+    if (gen_export_sshkey(SSH_KEYTYPE_DSS, 1024, path)) {
         W("libssh %s key generation failed, using fallback ssh-keygen", "DSA");
-        remove("./ssh_host_dsa_key");
-        s |= system("ssh-keygen -t dsa -b 1024 -f ./ssh_host_dsa_key -N '' >/dev/null 2>/dev/null");
+        remove(path);
+        if (snprintf(cmd, sizeof cmd, "ssh-keygen -t dsa -b 1024 -f %s -N '' "
+            ">/dev/null 2>/dev/null", path) > 0)
+        {
+            s |= system(cmd);
+        } else s++;
     }
-    if (gen_export_sshkey(SSH_KEYTYPE_ECDSA, 1024, "./ssh_host_ecdsa_key")) {
+    chmod(path, S_IRWXU);
+    if (pwd)
+        chown(path, pwd->pw_uid, pwd->pw_gid);
+
+    snprintf(path, sizeof path, "%s/%s", getopt_str(OPT_SSH_RUN_DIR),
+        ecdsa_key_suf);
+    if (gen_export_sshkey(SSH_KEYTYPE_ECDSA, 1024, path)) {
         W("libssh %s key generation failed, using fallback ssh-keygen", "ECDSA");
-        remove("./ssh_host_ecdsa_key");
-        s |= system("ssh-keygen -t ecdsa -b 256 -f ./ssh_host_ecdsa_key -N '' >/dev/null 2>/dev/null");
+        remove(path);
+        if (snprintf(cmd, sizeof cmd, "ssh-keygen -t ecdsa -b 256 -f %s -N '' "
+            ">/dev/null 2>/dev/null", path) > 0)
+        {
+            s |= system(cmd);
+        } else s++;
     }
+    chmod(path, S_IRWXU);
+    if (pwd)
+        chown(path, pwd->pw_uid, pwd->pw_gid);
 
     return s != 0;
 }
@@ -272,7 +329,7 @@ static int gen_export_sshkey(enum ssh_keytypes_e type, int length, const char *p
             W2("Unknown SSH key type: %d", type);
             return 1;
     }
-    D2("Generating %s key with length %d bits and save it on disk: %s",
+    D2("Generating %s key with length %d bits and save it on disk: '%s'",
         type_str, length, path);
     s = ssh_pki_generate(type, length, &priv_key);
     if (s != SSH_OK) {

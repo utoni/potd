@@ -82,6 +82,13 @@ static struct opt options[OPT_MAX+1] = {
         "path to root directory/image\n", NULL),
     OPT(OT_PATH, .str = POTD_NETNS_RUN_DIR, "netns-rundir",
         "set the network namespace run directory\n", NULL),
+    OPT(OT_PATH, .str = POTD_SSH_RUN_DIR, "ssh-rundir",
+        "set the SSH runtime directory\n",
+        "libssh will store its keys in this directory\n"),
+    OPT(OT_STR, .str = POTD_DEFUSER, "user",
+        "change user/group for redirector/protocol\n", NULL),
+    OPT(OT_STR, .str = NULL, "group",
+        "change group for redirector/protocol\n", NULL),
     OPT_NOARG("seccomp-minimal", "use a minimal seccomp ruleset\n",
         "instead of setting an allowed syscall ruleset\n"
         "use a minimal set of blocked syscalls e.g.\n"

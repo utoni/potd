@@ -302,6 +302,8 @@ int change_user_group(const char *user, const char *group)
     struct group *grp = NULL;
     gid_t gid;
 
+    D2("Change user %s and group %s", user,
+        (group ? group : "-"));
     pwd = getpwnam(user);
     if (!pwd)
         return 1;
@@ -325,7 +327,8 @@ int change_user_group(const char *user, const char *group)
 
 int change_default_user_group(void)
 {
-    return change_user_group("nobody", NULL);
+    return change_user_group(getopt_str(OPT_CHUSER),
+        (getopt_used(OPT_CHGROUP) ? getopt_str(OPT_CHGROUP) : NULL));
 }
 
 int safe_chroot(const char *newroot)

@@ -339,5 +339,11 @@ AC_DEFINE_UNQUOTED([POTD_DEFROOT], ["$potd_defroot"],
 potd_netns_run_dir="/var/run/potd-netns"
 AC_DEFINE_UNQUOTED([POTD_NETNS_RUN_DIR], ["$potd_netns_run_dir"],
       [default path to network namespace run directory])
+potd_ssh_run_dir="/var/run/potd-ssh"
+AC_DEFINE_UNQUOTED([POTD_SSH_RUN_DIR], ["$potd_ssh_run_dir"],
+      [default path to ssh run directory])
+potd_ssh_chuser="nobody"
+AC_DEFINE_UNQUOTED([POTD_DEFUSER], ["$potd_ssh_chuser"],
+      [default value for option --user])
 
 AC_OUTPUT(Makefile src/Makefile)
