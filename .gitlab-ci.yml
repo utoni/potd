@@ -10,7 +10,7 @@ build-debian:
     - ./autogen.sh
     - ./configure
     - make V=s
-    - valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
+    - TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
   stage: build
   artifacts:
     paths:
@@ -24,7 +24,7 @@ build-arch:
     - ./autogen.sh
     - ./configure
     - make V=s
-    - valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
+    - TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
   stage: test
   artifacts:
     paths:
