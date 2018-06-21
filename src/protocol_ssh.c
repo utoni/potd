@@ -202,8 +202,7 @@ static int set_default_keys(ssh_bind sshbind, int rsa_already_set,
             E_STRERR("RSA key '%s' inaccessible", path);
             return 1;
         }
-        if (ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_RSAKEY,
-                                 "./ssh_host_rsa_key")) {
+        if (ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_RSAKEY, path)) {
             E2("Faled to set RSA key: %s", ssh_get_error(sshbind));
             return 1;
         }
@@ -215,9 +214,7 @@ static int set_default_keys(ssh_bind sshbind, int rsa_already_set,
         if (access(path, R_OK)) {
             W_STRERR("Access DSA key '%s'", path);
         } else
-        if (ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_DSAKEY,
-                                 "./ssh_host_dsa_key"))
-        {
+        if (ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_DSAKEY, path)) {
             E2("Failed to set DSA key: %s", ssh_get_error(sshbind));
             return 1;
         }
@@ -229,9 +226,7 @@ static int set_default_keys(ssh_bind sshbind, int rsa_already_set,
         if (access(path, R_OK)) {
             W_STRERR("Access ECDSA key '%s'", path);
         } else
-        if (ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_ECDSAKEY,
-                                 "./ssh_host_ecdsa_key"))
-        {
+        if (ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_ECDSAKEY, path)) {
             E2("Failed to set ECDSA key: %s", ssh_get_error(sshbind));
             return 1;
         }

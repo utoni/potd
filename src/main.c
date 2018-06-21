@@ -309,9 +309,6 @@ int main(int argc, char *argv[])
         LOG_SET_FUNCS_VA(LOG_COLORED_FUNCS);
     }
 
-    ABORT_ON_FATAL( selftest_minimal_requirements(),
-        "Selfcheck" );
-
     if (getopt_used(OPT_LOGLEVEL)) {
         value = getopt_str(OPT_LOGLEVEL);
         if (!strcasecmp(value, "debug"))
@@ -334,6 +331,9 @@ int main(int argc, char *argv[])
 #ifdef HAVE_CONFIG_H
     N("%s (C) 2018 Toni Uhlig <%s>", PACKAGE_STRING, PACKAGE_BUGREPORT);
 #endif
+
+    ABORT_ON_FATAL( selftest_minimal_requirements(),
+        "Selfcheck" );
 
     if (geteuid() != 0) {
         E("%s", "I was made for root!");

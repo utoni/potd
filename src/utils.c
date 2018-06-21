@@ -482,11 +482,6 @@ int setup_network_namespace(const char *name)
         }
     }
 
-    if (path_is_mountpoint(netns_path)) {
-        W2("Network namespace '%s' already mounted, doing nothing.", netns_path);
-        return 1;
-    }
-
     while (mount("", getopt_str(OPT_NETNS_RUN_DIR), "none",
         MS_SHARED|MS_REC, NULL))
     {
@@ -544,24 +539,30 @@ int switch_network_namespace(const char *name)
     netns = open(net_path, O_RDONLY | O_CLOEXEC);
     if (netns < 0) {
         E_STRERR("Open network namespace '%s'", name);
-        return 1;
+        goto error;
     }
 
     if (setns(netns, CLONE_NEWNET) < 0) {
         E_STRERR("Setting the network namespace '%s'", name);
         close(netns);
-#ifdef HAVE_VALGRIND
-        /* older valgrind versions dont support the setns syscall */
-        if (RUNNING_ON_VALGRIND) {
-            W2("%s", "Running on valgrind, using unshare instead of setns ..");
-            return unshare(CLONE_NEWNET) != 0;
-        }
-#endif
-        return 1;
+        goto error;
     }
     close(netns);
 
     return 0;
+error:
+#ifdef HAVE_VALGRIND
+    /*
+     * Older valgrind versions dont support the setns syscall
+     * or the open might fail with ENOENT.
+     */
+    if (RUNNING_ON_VALGRIND) {
+        W2("%s", "Running on valgrind, using unshare instead of setns and "
+                 "ignoring erros before ..");
+        return unshare(CLONE_NEWNET) != 0;
+    }
+#endif
+    return 1;
 }
 
 int create_device_file_checked(const char *mount_path, const char *device_file,
