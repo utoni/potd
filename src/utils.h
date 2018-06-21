@@ -34,6 +34,12 @@ int change_default_user_group(void);
 
 int safe_chroot(const char *newroot);
 
+void mkdir_attr(const char *fname, mode_t mode, uid_t uid, gid_t gid);
+
+int is_dir(const char *fname);
+
+int is_link(const char *fname);
+
 int path_is_mountpoint(const char *path);
 
 void chk_chroot(void);

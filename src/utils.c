@@ -356,9 +356,63 @@ int safe_chroot(const char *newroot)
     return 0;
 }
 
+void mkdir_attr(const char *fname, mode_t mode, uid_t uid, gid_t gid) {
+    assert(fname);
+    mode &= 07777;
+
+    if (mkdir(fname, mode) == -1 ||
+        chmod(fname, mode) == -1 ||
+        chown(fname, uid, gid))
+    {
+        FATAL("%s: create directory '%s'", __func__, fname);
+    }
+}
+
+int is_dir(const char *fname) {
+    int rv;
+    struct stat s;
+    char tmp[PATH_MAX];
+
+    assert(fname);
+
+    if (*fname == '\0')
+        return 0;
+
+    // if fname doesn't end in '/', add one
+    if (fname[strlen(fname) - 1] == '/') {
+        rv = stat(fname, &s);
+    } else {
+        snprintf(tmp, sizeof tmp, "%s/", fname);
+        rv = stat(tmp, &s);
+    }
+
+    if (rv == -1)
+        return 0;
+
+    if (S_ISDIR(s.st_mode))
+        return 1;
+
+    return 0;
+}
+
+int is_link(const char *fname) {
+    struct stat s;
+
+    assert(fname);
+    if (*fname == '\0')
+        return 0;
+
+    if (lstat(fname, &s) == 0) {
+        if (S_ISLNK(s.st_mode))
+            return 1;
+    }
+
+    return 0;
+}
+
 int path_is_mountpoint(const char *path)
 {
-    struct stat current = {0}, parent = {0};
+    struct stat current, parent;
     size_t plen = strnlen(path, PATH_MAX);
     char parent_path[plen + 4];
     char *dirc, *dname;
@@ -395,7 +449,7 @@ error:
 
 void chk_chroot(void)
 {
-    struct stat s = {0};
+    struct stat s;
 
     if (stat("/", &s) == 0) {
         if (s.st_ino != 2)
@@ -574,7 +628,7 @@ int create_device_file_checked(const char *mount_path, const char *device_file,
                      S_IROTH;
     size_t plen = strnlen(mount_path, PATH_MAX);
     size_t dlen = strnlen(device_file, PATH_MAX);
-    struct stat devbuf = {0};
+    struct stat devbuf;
     char devpath[plen+dlen+2];
 
     snprintf(devpath, plen+dlen+2, "%s/%s", mount_path, device_file);
