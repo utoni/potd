@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <pty.h>
 #include <utmp.h>
+#include <limits.h>
 #include <sys/signalfd.h>
 #include <sys/wait.h>
 #include <sys/prctl.h>
@@ -250,6 +251,7 @@ error:
 
 static int jail_childfn(prisoner_process *ctx)
 {
+    char path[PATH_MAX];
     const char *path_dev = "/dev";
     const char *path_devpts = "/dev/pts";
     const char *path_proc = "/proc";
@@ -283,7 +285,7 @@ static int jail_childfn(prisoner_process *ctx)
             FATAL("Setup network namespace for pid %d", self_pid);
 
     caps_drop_dac_override(0);
-    //caps_drop_all();
+    //caps_drop_all(); /* TODO: If seccomp not avail, drop all caps! */
 
     D2("Unshare prisoner %d", self_pid);
     if (unshare(unshare_flags))
@@ -291,48 +293,44 @@ static int jail_childfn(prisoner_process *ctx)
 
     D2("Mounting rootfs to '%s'", ctx->newroot);
     mount_root();
-    fs_proc_sys(ctx->newroot);
-    fs_disable_files(ctx->newroot);
 
-    D2("Safe change root to: '%s'", ctx->newroot);
-    if (safe_chroot(ctx->newroot))
-        FATAL("Safe jail chroot to '%s' failed", ctx->newroot);
+    snprintf(path, sizeof path, "%s%s", ctx->newroot, path_shell);
+    D2("Checking Shell '%s'", path);
+    if (access(path, R_OK|X_OK))
+        FATAL("Shell '%s' is not accessible", path);
 
-    fs_basic_fs();
-
-    D2("Checking Shell '%s%s'", ctx->newroot, path_shell);
-    if (access(path_shell, R_OK|X_OK))
-        FATAL("Shell '%s%s' is not accessible", ctx->newroot, path_shell);
-
-    D2("Mounting devtmpfs to '%s%s'", ctx->newroot, path_dev);
-    s = mkdir(path_dev, S_IRUSR|S_IWUSR|S_IXUSR|
-                        S_IRGRP|S_IXGRP|
-                        S_IROTH|S_IXOTH);
+    snprintf(path, sizeof path, "%s%s", ctx->newroot, path_dev);
+    D2("Mounting devtmpfs to '%s'", path);
+    s = mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR|
+                    S_IRGRP|S_IXGRP|
+                    S_IROTH|S_IXOTH);
     if (s && errno != EEXIST)
-        FATAL("Create directory '%s'", path_dev);
-    if (!path_is_mountpoint(path_dev) && mount_dev(path_dev))
-        FATAL("Mount devtmpfs to '%s%s'", ctx->newroot, path_dev);
+        FATAL("Create directory '%s'", path);
+    if (!path_is_mountpoint(path) && mount_dev(path))
+        FATAL("Mount devtmpfs to '%s'", path);
 
-    D2("Mounting devpts to '%s%s'", ctx->newroot, path_devpts);
-    s = mkdir(path_devpts, S_IRUSR|S_IWUSR|S_IXUSR|
-                           S_IRGRP|S_IXGRP|
-                           S_IROTH|S_IXOTH);
+    snprintf(path, sizeof path, "%s%s", ctx->newroot, path_devpts);
+    D2("Mounting devpts to '%s'", path);
+    s = mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR|
+                    S_IRGRP|S_IXGRP|
+                    S_IROTH|S_IXOTH);
     if (s && errno != EEXIST)
-        FATAL("Create directory '%s'", path_devpts);
-    if (!path_is_mountpoint(path_devpts) && mount_pts(path_devpts))
-        FATAL("Mount devpts to '%s%s'", ctx->newroot, path_devpts);
+        FATAL("Create directory '%s'", path);
+    if (!path_is_mountpoint(path) && mount_pts(path))
+        FATAL("Mount devpts to '%s'", path);
 
-    D2("Mounting proc to '%s%s'", ctx->newroot, path_proc);
-    s = mkdir(path_proc, S_IRUSR|S_IWUSR|S_IXUSR|
-                         S_IRGRP|S_IXGRP|
-                         S_IROTH|S_IXOTH);
+    snprintf(path, sizeof path, "%s%s", ctx->newroot, path_proc);
+    D2("Mounting proc to '%s'", path);
+    s = mkdir(path, S_IRUSR|S_IWUSR|S_IXUSR|
+                    S_IRGRP|S_IXGRP|
+                    S_IROTH|S_IXOTH);
     if (s && errno != EEXIST)
-        FATAL("Create directory '%s'", path_proc);
+        FATAL("Create directory '%s'", path);
 
-    D2("Creating device files in '%s%s'", ctx->newroot, path_dev);
-    if (create_device_files(path_dev))
-        FATAL("Device file creation failed for rootfs '%s%s'",
-            ctx->newroot, path_dev);
+    snprintf(path, sizeof path, "%s%s", ctx->newroot, path_dev);
+    D2("Creating device files in '%s'", path);
+    if (create_device_files(path))
+        FATAL("Device file creation failed for rootfs '%s'", path);
 
     if (openpty(&master_fd, &slave_fd, NULL, NULL, NULL))
         FATAL("%s", "openpty");
@@ -347,7 +345,14 @@ static int jail_childfn(prisoner_process *ctx)
                 self_pid);
             break;
         case 0:
-            fs_proc_sys("");
+            fs_proc_sys(ctx->newroot);
+            fs_disable_files(ctx->newroot);
+
+            D2("Safe change root to: '%s'", ctx->newroot);
+            if (safe_chroot(ctx->newroot))
+            FATAL("Safe jail chroot to '%s' failed", ctx->newroot);
+
+            fs_basic_fs();
             socket_set_ifaddr(&ctx->client_psock, "lo", "127.0.0.1", "255.0.0.0");
 /*
             if (update_setgroups_self(0))

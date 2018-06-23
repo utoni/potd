@@ -185,10 +185,8 @@ static void disable_file_newroot(fs_oper op, const char *filename,
 {
     char path[PATH_MAX];
 
-    snprintf(path, sizeof path, "%s/%s", newroot, filename);
+    snprintf(path, sizeof path, "%s%s", newroot, filename);
     disable_file(op, path);
-//    if (last_disable == SUCCESSFUL)
-//        fs_rdonly(path, 1);
 }
 
 static int get_mount_flags(const char *path, unsigned long *flags)
@@ -416,7 +414,7 @@ void fs_disable_files(const char *newroot)
     size_t i;
     const char *blacklist_objects[] = {
         "/sys/firmware", "/sys/hypervisor", "/sys/power", "/sys/kernel/debug",
-        "/sys/kernel/vmcoreinfo", "/sys/kernel/uevent_helper",
+        "/sys/kernel/vmcoreinfo", "/sys/kernel/uevent_helper", "/proc/modules",
         /* various /proc/sys files */
         "/proc/sys/security", "/proc/sys/efi/vars", "/proc/sys/fs/binfmt_misc",
         "/proc/sys/kernel/core_pattern", "/proc/sys/kernel/modprobe",
