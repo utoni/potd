@@ -67,4 +67,7 @@ extern log_fmt_cb log_fmt;
 extern log_fmtex_cb log_fmtex;
 extern log_fmtexerr_cb log_fmtexerr;
 
+char *
+curtime_str(char *buf, size_t siz);
+
 #endif

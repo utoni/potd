@@ -1,5 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#else
+#define GETENV_FUNC getenv
 #endif
 
 #include <stdio.h>
@@ -11,6 +13,20 @@
 #include <assert.h>
 
 #include "log_colored.h"
+
+#define LOG(time, facl, pid, out) { printf("[%s]" facl "[%d] %s\n", time, pid, out); } while(0)
+#define LOGEX(time, facl, pid, src, line, out) \
+    { printf("[%s]" facl "[%d] %s.%zu: %s\n", time, pid, src, line, out); } while(0)
+#define LOGEXERR(time, facl, pid, src, line, out, serrno) \
+    { \
+        if (serrno) { \
+            printf("[%s]" facl "[%d] %s.%zu: %s failed: %s\n", \
+                time, pid, src, line, out, strerror(serrno)); \
+        } else { \
+            printf("[%s]" facl "[%d] %s.%zu: %s failed\n", \
+                time, pid, src, line, out); \
+        } \
+    } while(0)
 
 
 int log_open_colored(void)
@@ -36,6 +52,7 @@ void log_close_colored(void)
 void log_fmt_colored(log_priority prio, const char *fmt, ...)
 {
     pid_t my_pid;
+    char time[64];
     char out[LOGMSG_MAXLEN+1] = {0};
     va_list arglist;
 
@@ -47,21 +64,22 @@ void log_fmt_colored(log_priority prio, const char *fmt, ...)
     va_end(arglist);
 
     my_pid = getpid();
+    curtime_str(time, sizeof time);
     switch (prio) {
         case DEBUG:
-            printf("[DEBUG]  [%d] %s\n", my_pid, out);
+            LOG(time, "[DEBUG]  ", my_pid, out);
             break;
         case NOTICE:
-            printf("[" GRN "NOTICE" RESET "] [%d] %s\n", my_pid, out);
+            LOG(time, "[" GRN "NOTICE" RESET "] ", my_pid, out);
             break;
         case WARNING:
-            printf("[" YEL "WARNING" RESET "][%d] %s\n", my_pid, out);
+            LOG(time, "[" YEL "WARNING" RESET "]", my_pid, out);
             break;
         case ERROR:
-            printf("[" RED "ERROR" RESET "]  [%d] %s\n", my_pid, out);
+            LOG(time, "[" RED "ERROR" RESET "]  ", my_pid, out);
             break;
         case CMD:
-            printf("[" BLUE "CMD" RESET "]    [%d] %s\n", my_pid, out);
+            LOG(time, "[" BLU "CMD" RESET "]    ", my_pid, out);
             break;
     }
 }
@@ -70,6 +88,7 @@ void log_fmtex_colored(log_priority prio, const char *srcfile,
                        size_t line, const char *fmt, ...)
 {
     pid_t my_pid;
+    char time[64];
     char out[LOGMSG_MAXLEN+1] = {0};
     va_list arglist;
 
@@ -81,21 +100,19 @@ void log_fmtex_colored(log_priority prio, const char *srcfile,
     va_end(arglist);
 
     my_pid = getpid();
+    curtime_str(time, sizeof time);
     switch (prio) {
         case DEBUG:
-            printf("[DEBUG]  [%d] %s.%zu: %s\n", my_pid, srcfile, line, out);
+            LOGEX(time, "[DEBUG]  ", my_pid, srcfile, line, out);
             break;
         case NOTICE:
-            printf("[" GRN "NOTICE" RESET "] [%d] %s.%zu: %s\n",
-                my_pid, srcfile, line, out);
+            LOGEX(time, "[" GRN "NOTICE" RESET "] ", my_pid, srcfile, line, out);
             break;
         case WARNING:
-            printf("[" YEL "WARNING" RESET "][%d] %s.%zu: %s\n",
-                my_pid, srcfile, line, out);
+            LOGEX(time, "[" YEL "WARNING" RESET "]", my_pid, srcfile, line, out);
             break;
         case ERROR:
-            printf("[" RED "ERROR" RESET "]  [%d] %s.%zu: %s\n",
-                my_pid, srcfile, line, out);
+            LOGEX(time, "[" RED "ERROR" RESET "]  ", my_pid, srcfile, line, out);
             break;
         case CMD:
             break;
@@ -107,6 +124,7 @@ void log_fmtexerr_colored(log_priority prio, const char *srcfile,
 {
     pid_t my_pid;
     int saved_errno = errno;
+    char time[64];
     char out[LOGMSG_MAXLEN+1] = {0};
     va_list arglist;
 
@@ -118,45 +136,19 @@ void log_fmtexerr_colored(log_priority prio, const char *srcfile,
     va_end(arglist);
 
     my_pid = getpid();
+    curtime_str(time, sizeof time);
     switch (prio) {
         case DEBUG:
-            if (saved_errno)
-                printf("[DEBUG]  [%d] %s.%zu: %s failed: %s\n",
-                    my_pid, srcfile, line, out,
-                    strerror(saved_errno));
-            else
-                printf("[DEBUG]  [%d] %s.%zu: %s failed\n",
-                    my_pid, srcfile, line, out);
+            LOGEXERR(time, "[DEBUG]  ", my_pid, srcfile, line, out, saved_errno);
             break;
         case NOTICE:
-            if (saved_errno)
-                printf("[" GRN "NOTICE" RESET "] [%d] %s.%zu: %s failed: %s\n",
-                    my_pid, srcfile,
-                    line, out, strerror(saved_errno));
-            else
-                printf("[" GRN "NOTICE" RESET "] [%d] %s.%zu: %s failed\n",
-                    my_pid, srcfile,
-                    line, out);
+            LOGEXERR(time, "[" GRN "NOTICE" RESET "] ", my_pid, srcfile, line, out, saved_errno);
             break;
         case WARNING:
-            if (saved_errno)
-                printf("[" YEL "WARNING" RESET "][%d] %s.%zu: %s failed: %s\n",
-                    my_pid, srcfile,
-                    line, out, strerror(saved_errno));
-            else
-                printf("[" YEL "WARNING" RESET "][%d] %s.%zu: %s failed\n",
-                    my_pid, srcfile,
-                    line, out);
+            LOGEXERR(time, "[" YEL "WARNING" RESET "]", my_pid, srcfile, line, out, saved_errno);
             break;
         case ERROR:
-            if (saved_errno)
-                printf("[" RED "ERROR" RESET "]  [%d] %s.%zu: %s failed: %s\n",
-                    my_pid, srcfile,
-                    line, out, strerror(saved_errno));
-            else
-                printf("[" RED "ERROR" RESET "]  [%d] %s.%zu: %s failed\n",
-                    my_pid, srcfile,
-                    line, out);
+            LOGEXERR(time, "[" RED "ERROR" RESET "]  ", my_pid, srcfile, line, out, saved_errno);
             break;
         case CMD:
             break;

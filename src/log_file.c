@@ -7,6 +7,24 @@
 
 #include "log_file.h"
 
+#define LOG(fp, time, facl, pid, out) \
+    { fprintf(fp, "[%s]" facl "[%d] %s\n", time, pid, out); } while(0)
+#define LOGEX(fp, time, facl, pid, src, line, out) \
+    { \
+        fprintf(fp, "[%s]" facl "[%d] %s.%zu: %s\n", \
+            time, pid, src, line, out); \
+    } while(0)
+#define LOGEXERR(fp, time, facl, pid, src, line, out, serrno) \
+    { \
+        if (serrno) { \
+            fprintf(fp, "[%s]" facl "[%d] %s.%zu: %s failed: %s\n", \
+                time, pid, src, line, out, strerror(serrno)); \
+        } else { \
+            fprintf(fp, "[%s]" facl "[%d] %s.%zu: %s failed\n", \
+                time, pid, src, line, out); \
+        } \
+    } while(0)
+
 char *log_file = NULL;
 static FILE *flog = NULL;
 
@@ -42,6 +60,7 @@ void log_close_file(void)
 void log_fmt_file(log_priority prio, const char *fmt, ...)
 {
     pid_t my_pid;
+    char time[64];
     char out[LOGMSG_MAXLEN+1] = {0};
     va_list arglist;
 
@@ -53,21 +72,22 @@ void log_fmt_file(log_priority prio, const char *fmt, ...)
     va_end(arglist);
 
     my_pid = getpid();
+    curtime_str(time, sizeof time);
     switch (prio) {
         case DEBUG:
-            fprintf(flog, "[DEBUG]  [%d] %s\n", my_pid, out);
+            LOG(flog, time, "[DEBUG]  ", my_pid, out);
             break;
         case NOTICE:
-            fprintf(flog, "[NOTICE] [%d] %s\n", my_pid, out);
+            LOG(flog, time, "[NOTICE] ", my_pid, out);
             break;
         case WARNING:
-            fprintf(flog, "[WARNING][%d] %s\n", my_pid, out);
+            LOG(flog, time, "[WARNING]", my_pid, out);
             break;
         case ERROR:
-            fprintf(flog, "[ERROR]  [%d] %s\n", my_pid, out);
+            LOG(flog, time, "[ERROR]  ", my_pid, out);
             break;
         case CMD:
-            fprintf(flog, "[CMD]    [%d] %s\n", my_pid, out);
+            LOG(flog, time, "[CMD]    ", my_pid, out);
             break;
     }
 }
@@ -76,6 +96,7 @@ void log_fmtex_file(log_priority prio, const char *srcfile,
                     size_t line, const char *fmt, ...)
 {
     pid_t my_pid;
+    char time[64];
     char out[LOGMSG_MAXLEN+1] = {0};
     va_list arglist;
 
@@ -87,22 +108,19 @@ void log_fmtex_file(log_priority prio, const char *srcfile,
     va_end(arglist);
 
     my_pid = getpid();
+    curtime_str(time, sizeof time);
     switch (prio) {
         case DEBUG:
-            fprintf(flog, "[DEBUG]  [%d] %s.%zu: %s\n", my_pid, srcfile,
-                line, out);
+            LOGEX(flog, time, "[DEBUG]  ", my_pid, srcfile, line, out);
             break;
         case NOTICE:
-            fprintf(flog, "[NOTICE] [%d] %s.%zu: %s\n",
-                my_pid, srcfile, line, out);
+            LOGEX(flog, time, "[NOTICE] ", my_pid, srcfile, line, out);
             break;
         case WARNING:
-            fprintf(flog, "[WARNING][%d] %s.%zu: %s\n",
-                my_pid, srcfile, line, out);
+            LOGEX(flog, time, "[WARNING]", my_pid, srcfile, line, out);
             break;
         case ERROR:
-            fprintf(flog, "[ERROR]  [%d] %s.%zu: %s\n",
-                my_pid, srcfile, line, out);
+            LOGEX(flog, time, "[ERROR]  ", my_pid, srcfile, line, out);
             break;
         case CMD:
             break;
@@ -114,6 +132,7 @@ void log_fmtexerr_file(log_priority prio, const char *srcfile,
 {
     pid_t my_pid;
     int saved_errno = errno;
+    char time[64];
     char out[LOGMSG_MAXLEN+1] = {0};
     va_list arglist;
 
@@ -125,45 +144,23 @@ void log_fmtexerr_file(log_priority prio, const char *srcfile,
     va_end(arglist);
 
     my_pid = getpid();
+    curtime_str(time, sizeof time);
     switch (prio) {
         case DEBUG:
-            if (saved_errno)
-                fprintf(flog, "[DEBUG]  [%d] %s.%zu: %s failed: %s\n",
-                    my_pid, srcfile, line, out,
-                    strerror(saved_errno));
-            else
-                fprintf(flog, "[DEBUG]  [%d] %s.%zu: %s failed\n",
-                    my_pid, srcfile, line, out);
+            LOGEXERR(flog, time, "[DEBUG]  ", my_pid, srcfile, line, out,
+                saved_errno);
             break;
         case NOTICE:
-            if (saved_errno)
-                fprintf(flog, "[NOTICE] [%d] %s.%zu: %s failed: %s\n",
-                    my_pid, srcfile,
-                    line, out, strerror(saved_errno));
-            else
-                fprintf(flog, "[NOTICE] [%d] %s.%zu: %s failed\n",
-                    my_pid, srcfile,
-                    line, out);
+            LOGEXERR(flog, time, "[NOTICE] ", my_pid, srcfile, line, out,
+                saved_errno);
             break;
         case WARNING:
-            if (saved_errno)
-                fprintf(flog, "[WARNING][%d] %s.%zu: %s failed: %s\n",
-                    my_pid, srcfile,
-                    line, out, strerror(saved_errno));
-            else
-                fprintf(flog, "[WARNING][%d] %s.%zu: %s failed\n",
-                    my_pid, srcfile,
-                    line, out);
+            LOGEXERR(flog, time, "[WARNING]", my_pid, srcfile, line, out,
+                saved_errno);
             break;
         case ERROR:
-            if (saved_errno)
-                fprintf(flog, "[ERROR]  [%d] %s.%zu: %s failed: %s\n",
-                    my_pid, srcfile,
-                    line, out, strerror(saved_errno));
-            else
-                fprintf(flog, "[ERROR]  [%d] %s.%zu: %s failed\n",
-                    my_pid, srcfile,
-                    line, out);
+            LOGEXERR(flog, time, "[ERROR]  ", my_pid, srcfile, line, out,
+                saved_errno);
             break;
         case CMD:
             break;
