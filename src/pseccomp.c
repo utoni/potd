@@ -27,6 +27,8 @@ static const int minimum_disabled_syscalls[] = {
     SCMP_SYS(finit_module),
     SCMP_SYS(delete_module),
     SCMP_SYS(iopl),
+    SCMP_SYS(ioperm),
+    SCMP_SYS(iopl),
     SCMP_SYS(swapon),
     SCMP_SYS(swapoff),
     SCMP_SYS(syslog) /* Flawfinder: ignore */,
