@@ -50,8 +50,6 @@ int mount_dev(const char *mount_path);
 
 int mount_pts(const char *mount_path);
 
-int mount_proc(const char *mount_path);
-
 int setup_network_namespace(const char *name);
 
 int switch_network_namespace(const char *name);

@@ -462,9 +462,9 @@ void chk_chroot(void)
 void mount_root(void)
 {
     int s;
-    s = mount("", "/", "none", MS_SLAVE|MS_REC, NULL);
+    s = mount("none", "/", NULL, MS_SLAVE|MS_REC, NULL);
     if (s)
-        s = mount("", "/", "none", MS_PRIVATE|MS_REC, NULL);
+        s = mount("none", "/", NULL, MS_PRIVATE|MS_REC, NULL);
     if (s)
         chk_chroot();
 }
@@ -495,21 +495,6 @@ int mount_pts(const char *mount_path)
 
     if (s) {
         E_STRERR("Mount devpts filesystem to %s", mount_path);
-        return 1;
-    }
-
-    return 0;
-}
-
-int mount_proc(const char *mount_path)
-{
-    int s;
-
-    umount(mount_path);
-    s = mount("proc", mount_path, "proc",
-              MS_NOSUID|MS_NOEXEC|MS_NODEV|MS_REC, NULL);
-    if (s) {
-        E_STRERR("Mount proc filesystem to %s", mount_path);
         return 1;
     }
 
@@ -991,6 +976,13 @@ int selftest_minimal_requirements(void)
         N("%s", "Selftest success");
         exit(EXIT_SUCCESS);
     }
+
+    s = open(getopt_str(OPT_ROFILE), O_WRONLY|O_CREAT|O_TRUNC);
+    if (s < 0 && errno != EEXIST)
+        goto error;
+    if (mkdir(getopt_str(OPT_RODIR), S_IRWXU) && errno != EEXIST)
+        goto error;
+
     return 0;
 error:
     if (getopt_used(OPT_RUNTEST)) {

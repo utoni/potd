@@ -3,6 +3,7 @@
 #include <sched.h>
 #include <signal.h>
 #include <pty.h>
+#include <utmp.h>
 #include <sys/signalfd.h>
 #include <sys/wait.h>
 #include <sys/prctl.h>
@@ -13,6 +14,7 @@
 #include "socket.h"
 #include "pseccomp.h"
 #include "capabilities.h"
+#include "filesystem.h"
 #include "utils.h"
 #include "log.h"
 #include "options.h"
@@ -252,7 +254,7 @@ static int jail_childfn(prisoner_process *ctx)
     const char *path_devpts = "/dev/pts";
     const char *path_proc = "/proc";
     const char *path_shell = "/bin/sh";
-    int i, s, master_fd;
+    int i, s, master_fd, slave_fd;
     int unshare_flags = CLONE_NEWUTS|CLONE_NEWPID|CLONE_NEWIPC|
         CLONE_NEWNS/*|CLONE_NEWUSER*/;
     //unsigned int ug_map[3] = { 0, 10000, 65535 };
@@ -287,12 +289,16 @@ static int jail_childfn(prisoner_process *ctx)
     if (unshare(unshare_flags))
         FATAL("Unshare prisoner %d", self_pid);
 
+    D2("Mounting rootfs to '%s'", ctx->newroot);
+    mount_root();
+    fs_proc_sys(ctx->newroot);
+    fs_disable_files(ctx->newroot);
+
     D2("Safe change root to: '%s'", ctx->newroot);
     if (safe_chroot(ctx->newroot))
         FATAL("Safe jail chroot to '%s' failed", ctx->newroot);
 
-    D2("Mounting rootfs to '%s'", ctx->newroot);
-    mount_root();
+    fs_basic_fs();
 
     D2("Checking Shell '%s%s'", ctx->newroot, path_shell);
     if (access(path_shell, R_OK|X_OK))
@@ -328,18 +334,20 @@ static int jail_childfn(prisoner_process *ctx)
         FATAL("Device file creation failed for rootfs '%s%s'",
             ctx->newroot, path_dev);
 
-    D2("Forking a new pty process for "
-       "parent %d", self_pid);
-    child_pid = forkpty(&master_fd, NULL, NULL, NULL);
+    if (openpty(&master_fd, &slave_fd, NULL, NULL, NULL))
+        FATAL("%s", "openpty");
+
+    child_pid = fork();
     switch (child_pid) {
         case -1:
+            close(master_fd);
+            close(slave_fd);
             FATAL("Forking a new process for the slave tty from "
                 "parent pty with pid %d",
                 self_pid);
             break;
         case 0:
-            if (mount_proc(path_proc))
-                exit(EXIT_FAILURE);
+            fs_proc_sys("");
             socket_set_ifaddr(&ctx->client_psock, "lo", "127.0.0.1", "255.0.0.0");
 /*
             if (update_setgroups_self(0))
@@ -349,6 +357,10 @@ static int jail_childfn(prisoner_process *ctx)
             if (update_guid_map(getpid(), ug_map, 1))
                 exit(EXIT_FAILURE);
 */
+            close(master_fd);
+            if (login_tty(slave_fd))
+                exit(EXIT_FAILURE);
+
             if (close_fds_except(0, 1, 2, -1))
                 exit(EXIT_FAILURE);
 
@@ -386,6 +398,7 @@ static int jail_childfn(prisoner_process *ctx)
                 exit(EXIT_FAILURE);
             break;
         default:
+            close(slave_fd);
             if (set_fd_nonblock(master_fd)) {
                 E_STRERR("Pty master fd nonblock for prisoner pid %d",
                     child_pid);

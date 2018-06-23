@@ -347,6 +347,9 @@ AC_DEFINE_UNQUOTED([POTD_DEFUSER], ["$potd_ssh_chuser"],
       [default value for option --user])
 potd_rodir="/var/run/potd-rodir"
 AC_DEFINE_UNQUOTED([POTD_RODIR], ["$potd_rodir"],
-      [default path to directory for readonly bind mounts])
+      [default path to a directory for readonly bind mounts])
+potd_rofile="/var/run/potd-rofile"
+AC_DEFINE_UNQUOTED([POTD_ROFILE], ["$potd_rofile"],
+      [default path to a file for readonly bind mounts])
 
 AC_OUTPUT(Makefile src/Makefile)

@@ -10,6 +10,8 @@ typedef enum opt_name {
     OPT_PROTOCOL,
     OPT_JAIL,
     OPT_ROOT,
+    OPT_RODIR,
+    OPT_ROFILE,
     OPT_NETNS_RUN_DIR,
     OPT_SSH_RUN_DIR,
     OPT_CHUSER,

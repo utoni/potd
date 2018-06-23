@@ -2,6 +2,7 @@
 #include "config.h"
 #else
 #define POTD_RODIR "/var/run/potd-rodir"
+#define POTD_ROFILE "/var/run/potd-rofile"
 #endif
 
 #include <stdio.h>
@@ -16,6 +17,7 @@
 
 #include "log.h"
 #include "utils.h"
+#include "options.h"
 
 typedef struct MountData {
     /*
@@ -29,47 +31,54 @@ typedef struct MountData {
     char *fstype;
 } MountData;
 
-typedef enum {
+typedef enum fs_oper {
 	BLACKLIST_FILE,
-	BLACKLIST_NOLOG,
 	MOUNT_READONLY,
 	MOUNT_TMPFS,
 	MOUNT_NOEXEC,
 	MOUNT_RDWR,
 	OPERATION_MAX
-} OPERATION;
+} fs_oper;
 
 typedef enum {
 	UNSUCCESSFUL,
 	SUCCESSFUL
-} LAST_DISABLE_OPERATION;
-LAST_DISABLE_OPERATION last_disable = UNSUCCESSFUL;
+} last_disable_oper;
+last_disable_oper last_disable = UNSUCCESSFUL;
 
-static void disable_file(OPERATION op, const char *filename);
+static void disable_file(fs_oper op, const char *filename);
+static void disable_file_newroot(fs_oper op, const char *filename,
+                                 const char *newroot);
 static int get_mount_flags(const char *path, unsigned long *flags);
 static MountData *
 get_last_mount(void);
 static void fs_rdonly(const char *dir);
 static void fs_rdwr(const char *dir);
 static void fs_noexec(const char *dir);
+static void fs_var_lock(void);
+static void fs_var_tmp(void);
 
-#define MAX_BUF 4096
-static char mbuf[MAX_BUF];
+static char mbuf[BUFSIZ];
 static MountData mdata;
 
 
-static void disable_file(OPERATION op, const char *filename)
+static void disable_file(fs_oper op, const char *filename)
 {
     char *fname;
     struct stat s;
+    int rv;
 
     assert(filename);
-    assert(op <OPERATION_MAX);
+    assert(op < OPERATION_MAX);
     last_disable = UNSUCCESSFUL;
 
     // Resolve all symlinks
     fname = realpath(filename, NULL);
     if (fname == NULL && errno != EACCES) {
+        if (errno == ENOENT)
+            W_STRERR("%s: realpath '%s'", __func__, filename);
+        else
+            E_STRERR("%s: realpath '%s'", __func__, filename);
         return;
     }
 
@@ -78,16 +87,18 @@ static void disable_file(OPERATION op, const char *filename)
         // realpath and stat funtions will fail on FUSE filesystems
         // they don't seem to like a uid of 0
         // force mounting
-        int rv = mount(POTD_RODIR, filename, "none", MS_BIND, "mode=400,gid=0");
+        rv = mount(getopt_str(OPT_RODIR), filename, NULL,
+            MS_BIND, "mode=400,gid=0");
         if (rv == 0) {
             last_disable = SUCCESSFUL;
         } else {
-            rv = mount(POTD_RODIR, filename, "none", MS_BIND, "mode=400,gid=0");
+            rv = mount(getopt_str(OPT_ROFILE), filename, NULL, MS_BIND,
+                "mode=400,gid=0");
             if (rv == 0)
                 last_disable = SUCCESSFUL;
         }
         if (last_disable == SUCCESSFUL) {
-            D("%s: disable '%s' successful", __func__, filename);
+            D("%s: disable '%s' forced", __func__, filename);
         } else {
             W2("%s: '%s' is an invalid file, skipping...", __func__, filename);
         }
@@ -105,7 +116,7 @@ static void disable_file(OPERATION op, const char *filename)
     }
 
     // modify the file
-    if (op == BLACKLIST_FILE || op == BLACKLIST_NOLOG) {
+    if (op == BLACKLIST_FILE) {
         // some distros put all executables under /usr/bin and make /bin a symbolic link
         if ((strcmp(fname, "/bin") == 0 || strcmp(fname, "/usr/bin") == 0) &&
             is_link(filename) &&
@@ -120,11 +131,17 @@ static void disable_file(OPERATION op, const char *filename)
             }
 
             if (S_ISDIR(s.st_mode)) {
-                if (mount(POTD_RODIR, fname, "none", MS_BIND, "mode=400,gid=0") < 0)
+                if (mount(getopt_str(OPT_RODIR), fname, NULL, MS_BIND,
+                    "mode=400,gid=0") < 0)
+                {
                     FATAL("%s: disable dir '%s'", __func__, fname);
+                }
             } else {
-                if (mount(POTD_RODIR, fname, "none", MS_BIND, "mode=400,gid=0") < 0)
+                if (mount(getopt_str(OPT_ROFILE), fname, NULL, MS_BIND,
+                    "mode=400,gid=0") < 0)
+                {
                     FATAL("%s: disable file '%s'", __func__, fname);
+                }
             }
             last_disable = SUCCESSFUL;
         }
@@ -133,7 +150,7 @@ static void disable_file(OPERATION op, const char *filename)
         fs_rdonly(fname);
         // TODO: last_disable = SUCCESSFUL;
     } else if (op == MOUNT_RDWR) {
-        D("%s: Mounting read-only '%s'", __func__, fname);
+        D("%s: Mounting read-write '%s'", __func__, fname);
         fs_rdwr(fname);
         // TODO: last_disable = SUCCESSFUL;
     } else if (op == MOUNT_NOEXEC) {
@@ -144,8 +161,11 @@ static void disable_file(OPERATION op, const char *filename)
         if (S_ISDIR(s.st_mode)) {
             D("%s: Mounting tmpfs on '%s'", __func__, fname);
             // preserve owner and mode for the directory
-            if (mount("tmpfs", fname, "tmpfs", MS_NOSUID | MS_NODEV | MS_STRICTATIME | MS_REC,  0) < 0)
+            if (mount("tmpfs", fname, "tmpfs", MS_NOSUID|MS_NODEV|
+                MS_STRICTATIME|MS_REC,  0) < 0)
+            {
                 FATAL("%s: mounting tmpfs '%s'", __func__, fname);
+            }
             /* coverity[toctou] */
             if (chown(fname, s.st_uid, s.st_gid) == -1)
                 FATAL("%s: mounting tmpfs chown '%s'", __func__, fname);
@@ -158,6 +178,17 @@ static void disable_file(OPERATION op, const char *filename)
     } else assert(0);
 
     free(fname);
+}
+
+static void disable_file_newroot(fs_oper op, const char *filename,
+                                 const char *newroot)
+{
+    char path[PATH_MAX];
+
+    snprintf(path, sizeof path, "%s/%s", newroot, filename);
+    disable_file(op, path);
+//    if (last_disable == SUCCESSFUL)
+//        fs_rdonly(path, 1);
 }
 
 static int get_mount_flags(const char *path, unsigned long *flags)
@@ -179,13 +210,17 @@ get_last_mount(void)
     FILE *fp = fopen("/proc/self/mountinfo", "r");
     char *ptr;
     int cnt = 1;
+    size_t len;
 
     if (!fp)
         goto errexit;
 
     mbuf[0] = '\0';
-    while (fgets(mbuf, MAX_BUF, fp)) {}
+    while (fgets(mbuf, BUFSIZ, fp)) {}
     fclose(fp);
+    len = strnlen(mbuf, BUFSIZ);
+    if (mbuf[len - 1] == '\n')
+        mbuf[len - 1] = 0;
     D("%s: %s", __func__, mbuf);
 
     // extract filesystem name, directory and filesystem type
@@ -229,7 +264,7 @@ get_last_mount(void)
         goto errexit;
     }
 
-    D("%s: fsname='%s' dir='%s' fstype=%s\n", __func__, mdata.fsname,
+    D("%s: fsname='%s' dir='%s' fstype=%s", __func__, mdata.fsname,
         mdata.dir, mdata.fstype);
     return &mdata;
 errexit:
@@ -340,87 +375,72 @@ static void fs_noexec(const char *dir)
     }
 }
 
-// Disable /mnt, /media, /run/mount and /run/media access
-void fs_mnt(void)
-{
-    disable_file(BLACKLIST_FILE, "/mnt");
-    disable_file(BLACKLIST_FILE, "/media");
-    disable_file(BLACKLIST_FILE, "/run/mount");
-    disable_file(BLACKLIST_FILE, "//run/media");
-}
-
 // mount /proc and /sys directories
-void fs_proc_sys(void)
+void fs_proc_sys(const char *newroot)
 {
-    D("%s: Remounting /proc and /proc/sys filesystems", __func__);
-    if (mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_REC, NULL) < 0)
-        FATAL("%s: mounting /proc", __func__);
+    char path[PATH_MAX] = {0};
+
+    assert(newroot);
+
+    snprintf(path, sizeof path, "%s/proc", newroot);
+    D("%s: Remounting '%s'", __func__, path);
+    if (mount("proc", path, "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV|MS_REC,
+            NULL) < 0)
+    {
+        FATAL("%s: mounting %s", __func__, path);
+    }
 
     // remount /proc/sys readonly
-    if (mount("/proc/sys", "/proc/sys", NULL, MS_BIND | MS_REC, NULL) < 0 ||
-        mount(NULL, "/proc/sys", NULL, MS_BIND|MS_REMOUNT|MS_RDONLY|MS_NOSUID|
+    snprintf(path, sizeof path, "%s/proc/sys", newroot);
+    D("%s: Remounting '%s'", __func__, path);
+    if (mount(path, path, "none", MS_BIND|MS_REC, NULL) < 0 ||
+        mount(NULL, path, "none", MS_BIND|MS_REMOUNT|MS_RDONLY|MS_NOSUID|
             MS_NOEXEC|MS_NODEV|MS_REC, NULL) < 0)
     {
-        FATAL("%s: mounting /proc/sys", __func__);
+        FATAL("%s: mounting %s", __func__, path);
     }
 
     /* Mount a version of /sys that describes the network namespace */
-    D("%s: Remounting /sys directory", __func__);
-    if (umount2("/sys", MNT_DETACH) < 0)
-        W("%s: failed to unmount /sys", __func__);
-    if (mount("sysfs", "/sys", "sysfs", MS_RDONLY|MS_NOSUID|MS_NOEXEC|MS_NODEV|MS_REC, NULL) < 0) {
-        W("%s: failed to mount /sys", __func__);
-    } else {
-        W("%s: remount /sys", __func__);
+    snprintf(path, sizeof path, "%s/sys", newroot);
+    D("%s: Remounting '%s'", __func__, path);
+    umount2(path, MNT_DETACH);
+    if (mount("sysfs", path, "sysfs", MS_RDONLY|MS_NOSUID|MS_NOEXEC|MS_NODEV|
+            MS_REC, NULL) < 0)
+    {
+        FATAL("%s: mounting '%s'", __func__, path);
     }
-
-    disable_file(BLACKLIST_FILE, "/sys/firmware");
-    disable_file(BLACKLIST_FILE, "/sys/hypervisor");
-    disable_file(BLACKLIST_FILE, "/sys/power");
-    disable_file(BLACKLIST_FILE, "/sys/kernel/debug");
-    disable_file(BLACKLIST_FILE, "/sys/kernel/vmcoreinfo");
-    disable_file(BLACKLIST_FILE, "/sys/kernel/uevent_helper");
-
-    // various /proc/sys files
-    disable_file(BLACKLIST_FILE, "/proc/sys/security");
-    disable_file(BLACKLIST_FILE, "/proc/sys/efi/vars");
-    disable_file(BLACKLIST_FILE, "/proc/sys/fs/binfmt_misc");
-    disable_file(BLACKLIST_FILE, "/proc/sys/kernel/core_pattern");
-    disable_file(BLACKLIST_FILE, "/proc/sys/kernel/modprobe");
-    disable_file(BLACKLIST_FILE, "/proc/sysrq-trigger");
-    disable_file(BLACKLIST_FILE, "/proc/sys/kernel/hotplug");
-    disable_file(BLACKLIST_FILE, "/proc/sys/vm/panic_on_oom");
-
-    // various /proc files
-    disable_file(BLACKLIST_FILE, "/proc/irq");
-    disable_file(BLACKLIST_FILE, "/proc/bus");
-    disable_file(BLACKLIST_FILE, "/proc/config.gz");
-    disable_file(BLACKLIST_FILE, "/proc/sched_debug");
-    disable_file(BLACKLIST_FILE, "/proc/timer_list");
-    disable_file(BLACKLIST_FILE, "/proc/timer_stats");
-    disable_file(BLACKLIST_FILE, "/proc/kcore");
-    disable_file(BLACKLIST_FILE, "/proc/kallsyms");
-    disable_file(BLACKLIST_FILE, "/proc/mem");
-    disable_file(BLACKLIST_FILE, "/proc/kmem");
-
-    // remove kernel symbol information
-    disable_file(BLACKLIST_FILE, "/usr/src/linux");
-    disable_file(BLACKLIST_FILE, "/lib/modules");
-    disable_file(BLACKLIST_FILE, "/usr/lib/debug");
-    disable_file(BLACKLIST_FILE, "/boot");
-
-    // disable /selinux
-    disable_file(BLACKLIST_FILE, "/selinux");
-
-    // disable /dev/port
-    disable_file(BLACKLIST_FILE, "/dev/port");
-
-    // disable /dev/kmsg and /proc/kmsg
-    disable_file(BLACKLIST_FILE, "/dev/kmsg");
-    disable_file(BLACKLIST_FILE, "/proc/kmsg");
 }
 
-void fs_var_lock(void)
+void fs_disable_files(const char *newroot)
+{
+    size_t i;
+    const char *blacklist_objects[] = {
+        "/sys/firmware", "/sys/hypervisor", "/sys/power", "/sys/kernel/debug",
+        "/sys/kernel/vmcoreinfo", "/sys/kernel/uevent_helper",
+        /* various /proc/sys files */
+        "/proc/sys/security", "/proc/sys/efi/vars", "/proc/sys/fs/binfmt_misc",
+        "/proc/sys/kernel/core_pattern", "/proc/sys/kernel/modprobe",
+        "/proc/sysrq-trigger", "/proc/sys/kernel/hotplug",
+        "/proc/sys/vm/panic_on_oom",
+        /* various /proc files */
+        "/proc/acpi", "/proc/apm", "/proc/asound", "/proc/fs", "/proc/scsi",
+        "/proc/irq", "/proc/bus", "/proc/config.gz", "/proc/sched_debug",
+        "/proc/timer_list", "/proc/timer_stats", "/proc/kcore", "/proc/keys",
+        "/proc/kallsyms", "/proc/mem", "/proc/kmem",
+        /* remove kernel symbol information */
+        "/usr/src/linux", "/lib/modules", "/usr/lib/debug", "/boot",
+        /* other */
+        "/sys/fs/selinux", "/selinux",
+        "/dev/port", "/dev/kmsg", "/proc/kmsg",
+        "/mnt", "/media", "/run/mount", "/run/media"
+    };
+
+    for (i = 0; i < SIZEOF(blacklist_objects); ++i) {
+        disable_file_newroot(BLACKLIST_FILE, blacklist_objects[i], newroot);
+    }
+}
+
+static void fs_var_lock(void)
 {
     char *lnk;
 
@@ -451,7 +471,7 @@ void fs_var_lock(void)
     }
 }
 
-void fs_var_tmp(void)
+static void fs_var_tmp(void)
 {
     struct stat s;
 
@@ -483,6 +503,8 @@ void fs_basic_fs(void)
     fs_rdonly("/lib32");
     fs_rdonly("/libx32");
     fs_rdonly("/usr");
+    D("%s: mounting read-only /proc/sys/net ", __func__);
+    fs_rdonly("/proc/sys/net");
 
     // update /var directory in order to support multiple sandboxes running on the same root directory
 	fs_var_lock();
@@ -492,4 +514,3 @@ void fs_basic_fs(void)
     fs_rdwr("/var/cache");
     fs_rdwr("/var/utmp");
 }
-

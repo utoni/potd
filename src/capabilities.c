@@ -221,12 +221,12 @@ void caps_drop_dac_override(int noprofile)
     if (getuid() == 0 && !noprofile) {
         if (prctl(PR_CAPBSET_DROP, CAP_DAC_OVERRIDE, 0, 0, 0)) {
         } else {
-            D("%s", "Drop CAP_DAC_OVERRIDE");
+            D2("%s", "Drop CAP_DAC_OVERRIDE");
         }
 
         if (prctl(PR_CAPBSET_DROP, CAP_DAC_READ_SEARCH, 0, 0, 0)) {
         } else {
-            D("%s", "Drop CAP_DAC_READ_SEARCH");
+            D2("%s", "Drop CAP_DAC_READ_SEARCH");
         }
     }
 }
