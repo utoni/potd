@@ -87,12 +87,12 @@ static void disable_file(fs_oper op, const char *filename)
         // realpath and stat funtions will fail on FUSE filesystems
         // they don't seem to like a uid of 0
         // force mounting
-        rv = mount(getopt_str(OPT_RODIR), filename, NULL,
+        rv = mount(getopt_str(OPT_RODIR), filename, "none",
             MS_BIND, "mode=400,gid=0");
         if (rv == 0) {
             last_disable = SUCCESSFUL;
         } else {
-            rv = mount(getopt_str(OPT_ROFILE), filename, NULL, MS_BIND,
+            rv = mount(getopt_str(OPT_ROFILE), filename, "none", MS_BIND,
                 "mode=400,gid=0");
             if (rv == 0)
                 last_disable = SUCCESSFUL;
@@ -131,13 +131,13 @@ static void disable_file(fs_oper op, const char *filename)
             }
 
             if (S_ISDIR(s.st_mode)) {
-                if (mount(getopt_str(OPT_RODIR), fname, NULL, MS_BIND,
+                if (mount(getopt_str(OPT_RODIR), fname, "none", MS_BIND,
                     "mode=400,gid=0") < 0)
                 {
                     FATAL("%s: disable dir '%s'", __func__, fname);
                 }
             } else {
-                if (mount(getopt_str(OPT_ROFILE), fname, NULL, MS_BIND,
+                if (mount(getopt_str(OPT_ROFILE), fname, "none", MS_BIND,
                     "mode=400,gid=0") < 0)
                 {
                     FATAL("%s: disable file '%s'", __func__, fname);
@@ -286,8 +286,8 @@ static void fs_rdonly(const char *dir)
         flags |= MS_RDONLY;
         // mount --bind /bin /bin
         // mount --bind -o remount,ro /bin
-        if (mount(dir, dir, NULL, MS_BIND|MS_REC, NULL) < 0 ||
-            mount(NULL, dir, NULL, flags|MS_BIND|MS_REMOUNT|MS_REC, NULL) < 0)
+        if (mount(dir, dir, "none", MS_BIND|MS_REC, NULL) < 0 ||
+            mount("none", dir, "none", flags|MS_BIND|MS_REMOUNT|MS_REC, NULL) < 0)
         {
             FATAL("%s: mount read-only '%s'", __func__, dir);
         }
@@ -333,8 +333,8 @@ static void fs_rdwr(const char *dir)
     }
     flags &= ~MS_RDONLY;
 
-    if (mount(path, path, NULL, MS_BIND|MS_REC, NULL) < 0 ||
-        mount(NULL, path, NULL, flags|MS_BIND|MS_REMOUNT|MS_REC, NULL) < 0)
+    if (mount(path, path, "none", MS_BIND|MS_REC, NULL) < 0 ||
+        mount("none", path, "none", flags|MS_BIND|MS_REMOUNT|MS_REC, NULL) < 0)
     {
         FATAL("%s: mount read-write '%s'", __func__, path);
     }
@@ -365,8 +365,8 @@ static void fs_noexec(const char *dir)
             return;
         flags |= MS_NOEXEC|MS_NODEV|MS_NOSUID;
 
-        if (mount(dir, dir, NULL, MS_BIND|MS_REC, NULL) < 0 ||
-            mount(NULL, dir, NULL, flags|MS_BIND|MS_REMOUNT|MS_REC, NULL) < 0)
+        if (mount(dir, dir, "none", MS_BIND|MS_REC, NULL) < 0 ||
+            mount("none", dir, "none", flags|MS_BIND|MS_REMOUNT|MS_REC, NULL) < 0)
         {
             FATAL("%s: mount noexec for '%s'", __func__, dir);
         }

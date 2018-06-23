@@ -462,9 +462,9 @@ void chk_chroot(void)
 void mount_root(void)
 {
     int s;
-    s = mount("none", "/", NULL, MS_SLAVE|MS_REC, NULL);
+    s = mount("none", "/", "none", MS_SLAVE|MS_REC, NULL);
     if (s)
-        s = mount("none", "/", NULL, MS_PRIVATE|MS_REC, NULL);
+        s = mount("none", "/", "none", MS_PRIVATE|MS_REC, NULL);
     if (s)
         chk_chroot();
 }
@@ -597,7 +597,7 @@ error:
      */
     if (RUNNING_ON_VALGRIND) {
         W2("%s", "Running on valgrind, using unshare instead of setns and "
-                 "ignoring erros before ..");
+                 "ignoring errors before ..");
         return unshare(CLONE_NEWNET) != 0;
     }
 #endif
