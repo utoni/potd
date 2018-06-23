@@ -117,22 +117,26 @@ static void usage(const char *arg0, int print_copyright);
 static int parse_path(opt_ptr *d, char *some_path)
 {
     int rc = 1;
-    char path[PATH_MAX];
+    char path_dir[PATH_MAX] = {0};
+    char path_base[PATH_MAX] = {0};
+    char path[PATH_MAX] = {0};
     char *dir, *base;
 
     d->str_dup = realpath(some_path, NULL);
     if (!d->str_dup && errno == ENOENT) {
-        snprintf(path, sizeof path, "%s", some_path);
-        dir = dirname(path);
+        snprintf(path_dir, sizeof path_dir, "%s", some_path);
+        dir = dirname(path_dir);
         if (!dir)
             return 1;
         dir = realpath(dir, NULL);
         if (!dir)
             return 1;
-        snprintf(path, sizeof path, "%s", some_path);
-        base = basename(path);
+
+        snprintf(path_base, sizeof path_base, "%s", some_path);
+        base = basename(path_base);
         if (!base)
             goto error;
+
         snprintf(path, sizeof path, "%s/%s", dir, base);
         d->str_dup = strndup(path, strnlen(path, sizeof path));
 error:

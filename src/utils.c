@@ -977,7 +977,7 @@ int selftest_minimal_requirements(void)
         exit(EXIT_SUCCESS);
     }
 
-    s = open(getopt_str(OPT_ROFILE), O_WRONLY|O_CREAT|O_TRUNC);
+    s = open(getopt_str(OPT_ROFILE), O_WRONLY|O_CREAT|O_TRUNC, 0);
     if (s < 0 && errno != EEXIST)
         goto error;
     if (mkdir(getopt_str(OPT_RODIR), S_IRWXU) && errno != EEXIST)
