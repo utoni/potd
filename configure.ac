@@ -60,11 +60,11 @@ LIBS="$PTHREAD_LIBS $LIBS"
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
 dnl Check for std header files
-AC_CHECK_HEADERS([stdio.h ctype.h assert.h sched.h signal.h time.h errno.h pwd.h], [],
+AC_CHECK_HEADERS([stdio.h ctype.h assert.h sched.h signal.h time.h errno.h pwd.h limits.h pty.h utmp.h], [],
       [ AC_MSG_ERROR([required std header not available]) ])
 
 dnl Check for system specific header files
-AC_CHECK_HEADERS([pty.h linux/capability.h sys/wait.h sys/ioctl.h net/if.h netinet/in.h libgen.h], [],
+AC_CHECK_HEADERS([linux/capability.h sys/wait.h sys/ioctl.h net/if.h netinet/in.h libgen.h], [],
       [ AC_MSG_ERROR([required system specific header not available]) ])
 AC_CHECK_HEADERS([libutil.h pthread.h syslog.h sys/prctl.h linux/limits.h \
                   sys/uio.h poll.h sys/epoll.h sys/sysmacros.h sys/mount.h util.h])
@@ -315,10 +315,11 @@ AC_DEFINE_UNQUOTED([GETENV_FUNC], [$getenv_func],
       [set it to the getenv function e.g. secure_getenv or getenv])
 
 dnl Most systems require linking against libutil.so in order to get forkpty()
-AC_CHECK_FUNCS([forkpty], [],
-               [AC_CHECK_LIB(util, forkpty,
-               [LIBS="-lutil $LIBS"
-                AC_DEFINE(HAVE_FORKPTY)])])
+AC_CHECK_FUNCS([openpty login_tty], [],
+               [AC_CHECK_LIB([util], [openpty],
+                   [LIBS="-lutil $LIBS"
+                    AC_DEFINE([HAVE_LIBUTIL], [1], [openpty and login_tty require linking against libutil])
+                   ])])
 
 dnl C99 snprintf checks
 HW_FUNC_VSNPRINTF
