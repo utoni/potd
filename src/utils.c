@@ -341,8 +341,11 @@ int change_user_group(const char *user, const char *group)
     struct group *grp = NULL;
     gid_t gid;
 
-    D2("Change user %s and group %s", user,
-        (group ? group : "-"));
+    if (group)
+        D2("Change user to '%s' and group '%s'", user, group);
+    else
+        D2("Change user to '%s' and its main group", user);
+
     pwd = getpwnam(user);
     if (!pwd)
         return 1;
