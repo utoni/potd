@@ -42,6 +42,8 @@ static void *
 client_mainloop(void *arg);
 static int client_io(event_ctx *ev_ctx, int src_fd, void *user_data);
 
+static pthread_attr_t pattr;
+
 
 int redirector_init_ctx(redirector_ctx **ctx)
 {
@@ -55,6 +57,12 @@ int redirector_init_ctx(redirector_ctx **ctx)
     memset(*ctx, 0, sizeof(**ctx));
     fwd = &(*ctx)->fwd_ctx;
     if (fwd_init_ctx(&fwd))
+        return 1;
+
+    if (pthread_attr_init(&pattr))
+        return 1;
+    /* BUG: Do not use pthread_detach in pthread routine! */
+    if (pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED))
         return 1;
 
     return 0;
@@ -291,7 +299,7 @@ static int redirector_accept_client(event_ctx *ev_ctx, int fd, void *user_data)
                 rdr_ctx->host_buf, rdr_ctx->service_buf,
                 args->client_sock.fd);
 
-            if (pthread_create(&args->self, NULL,
+            if (pthread_create(&args->self, &pattr,
                                client_mainloop, args))
             {
                 E_STRERR("Thread creation for %s:%s on fd %d",
@@ -322,7 +330,6 @@ client_mainloop(void *arg)
 
     assert(arg);
     args = (client_thread *) arg;
-    pthread_detach(args->self);
 
     event_init(&ev_ctx);
     if (event_setup(ev_ctx)) {
