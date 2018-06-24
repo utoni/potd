@@ -67,7 +67,8 @@ dnl Check for system specific header files
 AC_CHECK_HEADERS([linux/capability.h sys/wait.h sys/ioctl.h net/if.h netinet/in.h libgen.h], [],
       [ AC_MSG_ERROR([required system specific header not available]) ])
 AC_CHECK_HEADERS([libutil.h pthread.h syslog.h sys/prctl.h linux/limits.h \
-                  sys/uio.h poll.h sys/epoll.h sys/sysmacros.h sys/mount.h util.h])
+                  sys/uio.h poll.h sys/epoll.h sys/sysmacros.h sys/mount.h \
+                  util.h execinfo])
 
 dnl Check for GAI header
 AC_CHECK_HEADERS([netdb.h])
@@ -87,6 +88,14 @@ AC_CHECK_FUNCS([getaddrinfo getnameinfo freeaddrinfo], [],
 dnl epoll functions
 AC_CHECK_FUNCS([epoll_create1 epoll_ctl epoll_pwait], [],
       [ AC_MSG_ERROR([required epoll function not available]) ])
+dnl backtrace* functions
+AC_CHECK_FUNCS([backtrace backtrace_symbols], [ backtrace_avail="yes" ],
+                                              [ backtrace_avail="no"  ])
+AC_CHECK_LIB([execinfo], [backtrace],
+      [ LIBS="-lexecinfo $LIBS"
+        backtrace_avail="yes" ])
+AS_IF([test "x${backtrace_avail}" = xyes],
+      [ AC_DEFINE([HAVE_EXECINFO], [1], [backtrace and backtrace_symbols are available on your system]) ])
 
 AC_CHECK_LIB([socket], [connect])
 AC_CHECK_LIB([pthread], [pthread_create])

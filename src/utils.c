@@ -22,6 +22,9 @@
 #include <linux/limits.h>
 #include <libgen.h>
 #include <assert.h>
+#ifdef HAVE_EXECINFO
+#include <execinfo.h>
+#endif
 #ifdef HAVE_VALGRIND
 #include <valgrind.h>
 #endif
@@ -31,6 +34,7 @@
 #include "options.h"
 
 #define _POSIX_PATH_MAX 256
+#define MAX_STACK_FRAMES 64
 
 char *arg0 = NULL;
 static int null_fd = -1;
@@ -41,7 +45,13 @@ static const char cgdef[] = "/sys/fs/cgroup/potd";
 static const char *_cgmem = NULL;
 static const char *_cgcpu = NULL;
 static const char *_cgpid = NULL;
+#ifdef HAVE_EXECINFO
+static void *stack_traces[MAX_STACK_FRAMES];
+#endif
 
+#ifdef HAVE_EXECINFO
+static void print_stack_trace(void);
+#endif
 static char *
 sig_to_str(int signo, char *buf, size_t siz);
 static void sighandler_child(int signo);
@@ -50,6 +60,32 @@ static int cgroups_write_file(const char *cdir, const char *csub,
                               const char *value, size_t siz);
 static inline void bin2hex_char(unsigned char c, char hexc[5]);
 
+
+#ifdef HAVE_EXECINFO
+static void print_stack_trace(void)
+{
+    int i, trace_size = 0;
+    char **call_stack = NULL;
+
+    trace_size = backtrace(stack_traces, MAX_STACK_FRAMES);
+    call_stack = backtrace_symbols(stack_traces, trace_size);
+
+    if (log_fmt)
+        E("Backtrace returned %d addresses", trace_size);
+    else
+        fprintf(stderr, "Backtrace returned %d addresses", trace_size);
+
+    for (i = 0; i < trace_size; ++i) {
+        if (log_fmt)
+            E("  %s", call_stack[i]);
+        else
+            fprintf(stderr, "  %s", call_stack[i]);
+    }
+
+    if (call_stack)
+        free(call_stack);
+}
+#endif
 
 int set_fd_nonblock(int fd)
 {
@@ -110,6 +146,9 @@ static void sighandler_child(int signo)
             E("Segmentation fault .. please report to <%s>", PACKAGE_BUGREPORT);
 #else
             E("%s", "Segmentation fault ..");
+#endif
+#ifdef HAVE_EXECINFO
+            print_stack_trace();
 #endif
             exit(EXIT_FAILURE);
     }
