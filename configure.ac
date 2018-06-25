@@ -68,7 +68,7 @@ AC_CHECK_HEADERS([linux/capability.h sys/wait.h sys/ioctl.h net/if.h netinet/in.
       [ AC_MSG_ERROR([required system specific header not available]) ])
 AC_CHECK_HEADERS([libutil.h pthread.h syslog.h sys/prctl.h linux/limits.h \
                   sys/uio.h poll.h sys/epoll.h sys/sysmacros.h sys/mount.h \
-                  util.h execinfo])
+                  util.h execinfo.h])
 
 dnl Check for GAI header
 AC_CHECK_HEADERS([netdb.h])
@@ -212,11 +212,17 @@ AS_IF([test "x${libssh_require_gssapi}" = xyes],
       ])
 
 dnl libseccomp-dev
-PKG_CHECK_MODULES([libseccomp], [libseccomp >= 2.2.1], [],
-      [ AC_MSG_ERROR([pkg-config: libseccomp >= 2.2.1 not found]) ])
+PKG_CHECK_MODULES([libseccomp], [libseccomp >= 2.2.1],
+      [ have_seccomp="yes" ],
+      [ have_seccomp="no"  ])
 saved_CFLAGS="$CFLAGS $libseccomp_CFLAGS"
 saved_LIBS="$LIBS $libseccomp_LIBS"
-AC_CHECK_LIB([seccomp], [seccomp_init], [], [AC_MSG_ERROR([final link against libseccomp failed])])
+AC_CHECK_LIB([seccomp], [seccomp_init],
+      [ have_seccomp="yes"
+        AC_DEFINE([HAVE_SECCOMP], [1], [Define to 1 if you have a working libseccomp])
+      ],
+      [ have_seccomp="no" ])
+AM_CONDITIONAL([HAVE_SECCOMP], [test "x${have_seccomp}" = xyes])
 CFLAGS="$saved_CFLAGS"
 LIBS="$saved_LIBS"
 

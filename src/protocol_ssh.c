@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -13,7 +17,9 @@
 
 #include "protocol_ssh.h"
 #include "protocol.h"
+#ifdef HAVE_SECCOMP
 #include "pseccomp.h"
+#endif
 #include "options.h"
 #include "utils.h"
 #include "log.h"
@@ -126,7 +132,9 @@ int ssh_on_listen(protocol_ctx *ctx)
     pid_t p;
     int s;
     ssh_data *d = (ssh_data *) ctx->src.data;
+#ifdef HAVE_SECCOMP
     pseccomp_ctx *psc = NULL;
+#endif
 
     if (ssh_bind_options_set(d->sshbind, SSH_BIND_OPTIONS_BINDADDR,
                              ctx->src.host_buf))
@@ -153,10 +161,12 @@ int ssh_on_listen(protocol_ctx *ctx)
                 ssh_bind_get_fd(d->sshbind));
             return 1;
         case 0:
+#ifdef HAVE_SECCOMP
             pseccomp_set_immutable();
             pseccomp_init(&psc, PS_ALLOW|PS_MINIMUM);
             s = pseccomp_protocol_rules(psc);
             pseccomp_free(&psc);
+#endif
             if (s) {
                 E_STRERR("%s", "Could not add seccomp rules");
                 return -1;
@@ -346,6 +356,9 @@ static int gen_export_sshkey(enum ssh_keytypes_e type, int length, const char *p
 static void ssh_log_cb(int priority, const char *function,
                        const char *buffer, void *userdata)
 {
+    (void) function;
+    (void) userdata;
+
     switch (priority) {
         case 0:
             W("libssh: %s", buffer);
@@ -538,6 +551,9 @@ static int authenticate(ssh_session session)
 
 static int auth_password(const char *user, const char *password)
 {
+    (void) user;
+    (void) password;
+
 /*
     if(strcmp(user, SSHD_USER))
         return 0;

@@ -7,7 +7,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#ifdef HAVE_SECCOMP
 #include "pseccomp.h"
+#endif
 #include "capabilities.h"
 #include "log.h"
 #include "log_colored.h"
@@ -285,7 +287,9 @@ int main(int argc, char *argv[])
     char *value;
     int proc_status;
     pid_t daemon_pid, child_pid;
+#ifdef HAVE_SECCOMP
     pseccomp_ctx *psc = NULL;
+#endif
 
     (void) argc;
     (void) argv;
@@ -341,11 +345,15 @@ int main(int argc, char *argv[])
     }
 
     caps_default_filter();
+#ifdef HAVE_SECCOMP
     pseccomp_init(&psc,
         (getopt_used(OPT_SECCOMP_MINIMAL) ? PS_MINIMUM : 0));
     if (pseccomp_default_rules(psc))
         FATAL("%s", "SECCOMP: adding default rules");
     pseccomp_free(&psc);
+#else
+    W("%s", "Compiled without libseccomp, this may have a security impact.");
+#endif
 
     D("%s", "Forking into background/foreground");
     daemon_pid = daemonize(!getopt_used(OPT_DAEMON));

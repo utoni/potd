@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sched.h>
@@ -13,7 +17,9 @@
 
 #include "jail.h"
 #include "socket.h"
+#ifdef HAVE_SECCOMP
 #include "pseccomp.h"
+#endif
 #include "capabilities.h"
 #include "filesystem.h"
 #include "utils.h"
@@ -261,7 +267,9 @@ static int jail_childfn(prisoner_process *ctx)
         CLONE_NEWNS/*|CLONE_NEWUSER*/;
     //unsigned int ug_map[3] = { 0, 10000, 65535 };
     pid_t self_pid, child_pid;
+#ifdef HAVE_SECCOMP
     pseccomp_ctx *psc = NULL;
+#endif
 
     assert(ctx);
     self_pid = getpid();
@@ -285,7 +293,6 @@ static int jail_childfn(prisoner_process *ctx)
             FATAL("Setup network namespace for pid %d", self_pid);
 
     caps_drop_dac_override(0);
-    //caps_drop_all(); /* TODO: If seccomp not avail, drop all caps! */
 
     D2("Unshare prisoner %d", self_pid);
     if (unshare(unshare_flags))
@@ -391,12 +398,18 @@ static int jail_childfn(prisoner_process *ctx)
                 " -----------------------------------------------------\n"
             );
 
+#ifdef HAVE_SECCOMP
             pseccomp_set_immutable();
             pseccomp_init(&psc,
                 (getopt_used(OPT_SECCOMP_MINIMAL) ? PS_MINIMUM : 0));
             if (pseccomp_jail_rules(psc))
                 FATAL("%s", "SECCOMP: adding jail rules");
             pseccomp_free(&psc);
+#else
+            /* libseccomp is not available, so drop at least all caps */
+            W2("%s", "Compiled without libseccomp, dropping ALL capabilities");
+            caps_drop_all();
+#endif
 
             sethostname("openwrt", SIZEOF("openwrt"));
             if (execl(path_shell, path_shell, (char *) NULL))
