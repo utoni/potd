@@ -87,12 +87,13 @@ int ssh_init_cb(protocol_ctx *ctx)
         if (ssh_version(SSH_VERSION_INT(0,7,3)) == NULL)
         {
             W("%s", "Unsupported libssh version < 0.7.3");
+            return 1;
         }
-        if (ssh_version(SSH_VERSION_INT(0,7,4)) != NULL ||
-            ssh_version(SSH_VERSION_INT(0,7,90)) != NULL)
+        if (ssh_version(SSH_VERSION_INT(0,7,4)) == NULL &&
+            ssh_version(SSH_VERSION_INT(0,7,90)) == NULL)
         {
             W("%s",
-              "libssh versions > 0.7.3 may suffer "
+              "libssh versions <= 0.7.3 may suffer "
               "from problems with the pki key generation/export");
         }
         version_logged = 1;
@@ -341,7 +342,7 @@ static int gen_export_sshkey(enum ssh_keytypes_e type, int length, const char *p
         W2("Generating %s key failed: %d", type_str, s);
         return 1;
     }
-    s = ssh_pki_export_privkey_file(priv_key, "", NULL,
+    s = ssh_pki_export_privkey_file(priv_key, NULL, NULL,
                                     NULL, path);
     ssh_key_free(priv_key);
 
