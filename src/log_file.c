@@ -8,19 +8,19 @@
 #include "log_file.h"
 
 #define LOG(fp, time, facl, pid, out) \
-    { fprintf(fp, "[%s]" facl "[%d] %s\n", time, pid, out); } while(0)
+    { fprintf(fp, "[%s]" facl "[%5d] %s\n", time, pid, out); } while(0)
 #define LOGEX(fp, time, facl, pid, src, line, out) \
     { \
-        fprintf(fp, "[%s]" facl "[%d] %s.%zu: %s\n", \
+        fprintf(fp, "[%s]" facl "[%5d] %s.%zu: %s\n", \
             time, pid, src, line, out); \
     } while(0)
 #define LOGEXERR(fp, time, facl, pid, src, line, out, serrno) \
     { \
         if (serrno) { \
-            fprintf(fp, "[%s]" facl "[%d] %s.%zu: %s failed: %s\n", \
+            fprintf(fp, "[%s]" facl "[%5d] %s.%zu: %s failed: %s\n", \
                 time, pid, src, line, out, strerror(serrno)); \
         } else { \
-            fprintf(fp, "[%s]" facl "[%d] %s.%zu: %s failed\n", \
+            fprintf(fp, "[%s]" facl "[%5d] %s.%zu: %s failed\n", \
                 time, pid, src, line, out); \
         } \
     } while(0)

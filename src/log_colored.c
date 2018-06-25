@@ -14,16 +14,16 @@
 
 #include "log_colored.h"
 
-#define LOG(time, facl, pid, out) { printf("[%s]" facl "[%d] %s\n", time, pid, out); } while(0)
+#define LOG(time, facl, pid, out) { printf("[%s]" facl "[%5d] %s\n", time, pid, out); } while(0)
 #define LOGEX(time, facl, pid, src, line, out) \
-    { printf("[%s]" facl "[%d] %s.%zu: %s\n", time, pid, src, line, out); } while(0)
+    { printf("[%s]" facl "[%5d] %s.%zu: %s\n", time, pid, src, line, out); } while(0)
 #define LOGEXERR(time, facl, pid, src, line, out, serrno) \
     { \
         if (serrno) { \
-            printf("[%s]" facl "[%d] %s.%zu: %s failed: %s\n", \
+            printf("[%s]" facl "[%5d] %s.%zu: %s failed: %s\n", \
                 time, pid, src, line, out, strerror(serrno)); \
         } else { \
-            printf("[%s]" facl "[%d] %s.%zu: %s failed\n", \
+            printf("[%s]" facl "[%5d] %s.%zu: %s failed\n", \
                 time, pid, src, line, out); \
         } \
     } while(0)
