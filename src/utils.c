@@ -129,15 +129,20 @@ sig_to_str(int signo, char *buf, size_t siz)
 
 static void sighandler_child(int signo)
 {
+    static int got_exitsig = 0;
     char buf[16] = {0};
 
+    if (got_exitsig)
+        return;
     W("Got signal[%d]: %s", signo, sig_to_str(signo, &buf[0], sizeof buf));
     switch (signo) {
         case SIGABRT:
+            got_exitsig = 1;
             exit(EXIT_FAILURE);
         case SIGHUP:
             if (getppid() == 1) {
                 N("Master process %d died, exiting", getpgrp());
+                got_exitsig = 1;
                 exit(EXIT_SUCCESS);
             }
             break;
@@ -150,6 +155,7 @@ static void sighandler_child(int signo)
 #ifdef HAVE_EXECINFO
             print_stack_trace();
 #endif
+            got_exitsig = 1;
             exit(EXIT_FAILURE);
     }
 }
@@ -180,7 +186,6 @@ static void sighandler_master(int signo)
             if (exiting)
                 break;
             exiting = 1;
-            kill(0, SIGTERM);
             exit(EXIT_FAILURE);
     }
 }

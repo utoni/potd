@@ -377,11 +377,11 @@ int main(int argc, char *argv[])
             E2("%s daemon with pid %d terminated, exiting",
                 (child_pid == jl_pid ? "Jail" : "Redirector"),
                 (child_pid == jl_pid ? jl_pid : rdr_pid));
-            kill(getpid(), SIGTERM);
-            break;
         } else W2("Process with pid %d terminated", child_pid);
+        break;
     }
 
     log_close();
+    kill(getpid(), SIGTERM);
     return 0;
 }
