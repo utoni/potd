@@ -16,6 +16,17 @@ AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_TYPE_SIZE_T
 
+AC_MSG_CHECKING([if your os is supported])
+case ${host_os} in
+    *linux*|*BSD*)
+        AC_MSG_RESULT([yes, ${host_os}])
+        ;;
+    *)
+        AC_MSG_RESULT([no, ${host_os}])
+        AC_MSG_ERROR([Your operating system ${host_os} is currently not supported, sorry.])
+        ;;
+esac
+
 AC_CHECK_TOOL([PKGCONFIG], [pkg-config], [:])
 AS_IF([test "x${PKGCONFIG}" = x], [ AC_MSG_ERROR([pkg-config not found]) ])
 
@@ -54,6 +65,48 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
       [ AC_MSG_RESULT([yes]) ],
       [ AC_MSG_RESULT([no])
         CFLAGS="$saved_CFLAGS" ])
+
+dnl check for -fstack-protector-strong compiler support
+saved_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -fstack-protector-strong"
+AC_MSG_CHECKING([if ${CC} supports -fstack-protector-strong])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
+      [ AC_MSG_RESULT([yes]) ],
+      [ AC_MSG_RESULT([no])
+        CFLAGS="$saved_CFLAGS" ])
+
+dnl check if linker supports -Wl,-z,relro
+AC_MSG_CHECKING([if linker supports -Wl,-z,relro])
+saved_LDFLAGS="$LDFLAGS"
+LDFLAGS="$LDFLAGS -Wl,-z,relro"
+AC_TRY_LINK([],
+      [ char tmp; ],
+      [ relro_support="yes" ],
+      [ relro_support="no"
+        LDFLAGS="$saved_LDFLAGS" ])
+AC_MSG_RESULT([${relro_support}])
+
+dnl check if linker supports -Wl,-z,now
+AC_MSG_CHECKING([if linker supports -Wl,-z,now])
+saved_LDFLAGS="$LDFLAGS"
+LDFLAGS="$LDFLAGS -Wl,-z,now"
+AC_TRY_LINK([],
+      [ char tmp; ],
+      [ lnow_support="yes" ],
+      [ lnow_support="no"
+        LDFLAGS="$saved_LDFLAGS" ])
+AC_MSG_RESULT([${lnow_support}])
+
+dnl check if linker supports -Wl,-z,noexecstack
+AC_MSG_CHECKING([if linker supports -Wl,-z,noexecstack])
+saved_LDFLAGS="$LDFLAGS"
+LDFLAGS="$LDFLAGS -Wl,-z,noexecstack"
+AC_TRY_LINK([],
+      [ char tmp; ],
+      [ noexecstack_support="yes" ],
+      [ noexecstack_support="no"
+        LDFLAGS="$saved_LDFLAGS" ])
+AC_MSG_RESULT([${noexecstack_support}])
 
 AX_PTHREAD([],[ AC_MSG_ERROR([pthread required and not found]) ])
 LIBS="$PTHREAD_LIBS $LIBS"
