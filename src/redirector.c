@@ -272,6 +272,7 @@ static int redirector_accept_client(event_ctx *ev_ctx, int fd, void *user_data)
                 goto error;
             }
 
+            /* DDoS protection */
             ev_srv->last_accept_count++;
             t = time(NULL);
             d = difftime(t, ev_srv->last_accept_stamp);
@@ -282,7 +283,7 @@ static int redirector_accept_client(event_ctx *ev_ctx, int fd, void *user_data)
                 ev_srv->last_accept_count = 0;
             }
             if (ev_srv->last_accept_count / (size_t)d > 3) {
-                W2("DoS protection: Got %zu accepts/s",
+                W2("DDoS protection: Got %zu accepts/s",
                     ev_srv->last_accept_count / (size_t)d);
                 goto error;
             }

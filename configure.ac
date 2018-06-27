@@ -120,20 +120,20 @@ dnl Check for system specific header files
 AC_CHECK_HEADERS([linux/capability.h sys/wait.h sys/ioctl.h net/if.h netinet/in.h libgen.h], [],
       [ AC_MSG_ERROR([required system specific header not available]) ])
 AC_CHECK_HEADERS([libutil.h pthread.h syslog.h sys/prctl.h linux/limits.h \
-                  sys/uio.h poll.h sys/epoll.h sys/sysmacros.h sys/mount.h \
+                  sys/uio.h poll.h sys/epoll.h sys/sysmacros.h sys/mount.h sys/mman.h \
                   util.h execinfo.h])
 
 dnl Check for GAI header
 AC_CHECK_HEADERS([netdb.h])
 
 dnl minimum required functions
-AC_CHECK_FUNCS([open read write close malloc free memset memcpy fork unshare \
+AC_CHECK_FUNCS([open read write close mmap munmap malloc free memset memcpy fork unshare \
                 getpwnam getgrnam setreuid setregid \
                 wait waitpid isprint remove unlink mkdir access stat chroot chdir mount umount mknod \
                 strdup strcasecmp strncat strncpy printf fprintf getpid \
                 prctl signal signalfd fcntl getenv kill exit \
                 setsockopt socket connect accept bind listen \
-                time difftime strtol strtoll getopt_long_only], [],
+                time localtime difftime strtol strtoll getopt_long_only], [],
       [ AC_MSG_ERROR([required function not available]) ])
 dnl GAI functions
 AC_CHECK_FUNCS([getaddrinfo getnameinfo freeaddrinfo], [],
