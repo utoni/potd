@@ -119,7 +119,7 @@ AC_CHECK_HEADERS([stdio.h ctype.h assert.h sched.h signal.h time.h errno.h pwd.h
 dnl Check for system specific header files
 AC_CHECK_HEADERS([linux/capability.h sys/wait.h sys/ioctl.h net/if.h netinet/in.h libgen.h], [],
       [ AC_MSG_ERROR([required system specific header not available]) ])
-AC_CHECK_HEADERS([libutil.h pthread.h syslog.h sys/prctl.h linux/limits.h \
+AC_CHECK_HEADERS([libutil.h pthread.h semaphore.h syslog.h sys/prctl.h linux/limits.h \
                   sys/uio.h poll.h sys/epoll.h sys/sysmacros.h sys/mount.h sys/mman.h \
                   util.h execinfo.h])
 

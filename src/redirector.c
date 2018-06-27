@@ -4,7 +4,9 @@
 #include <string.h>
 #include <signal.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <time.h>
+#include <sys/mman.h>
 #include <assert.h>
 
 #include "redirector.h"
@@ -12,18 +14,22 @@
 #include "utils.h"
 #include "log.h"
 
+#define MAX_SESSIONS 3
+
 typedef struct client_thread {
     pthread_t self;
     psocket client_sock;
     char host_buf[NI_MAXHOST], service_buf[NI_MAXSERV];
     redirector_ctx *rdr_ctx;
+    sem_t *sessions_sem;
 } client_thread;
 
 typedef struct server_event {
     redirector_ctx **rdr_ctx;
-    const size_t siz;
+    size_t siz;
     size_t last_accept_count;
     time_t last_accept_stamp;
+    sem_t sessions_sem;
 } server_event;
 
 typedef struct client_event {
@@ -233,14 +239,22 @@ fwd_state_string(const forward_state c_state, const client_thread *args,
 static int redirector_mainloop(event_ctx **ev_ctx, redirector_ctx *rdr_ctx[], size_t siz)
 {
     int rc;
-    server_event ev_srv = { rdr_ctx, siz, 0, 0 };
+    server_event *ev_srv;
 
     set_procname("[potd] redirector");
     assert( set_child_sighandler() == 0 );
 
-    ev_srv.last_accept_stamp = time(NULL);
-    rc = event_loop(*ev_ctx, redirector_accept_client, &ev_srv);
+    ev_srv = (server_event *) mmap(NULL, sizeof *ev_srv, PROT_READ|PROT_WRITE,
+                                   MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+    assert( ev_srv );
+    ev_srv->rdr_ctx = rdr_ctx;
+    ev_srv->siz = siz;
+    ev_srv->last_accept_stamp = time(NULL);
+    assert( !sem_init(&ev_srv->sessions_sem, 1, MAX_SESSIONS) );
+    rc = event_loop(*ev_ctx, redirector_accept_client, ev_srv);
     event_free(ev_ctx);
+    sem_destroy(&ev_srv->sessions_sem);
+    munmap(ev_srv, sizeof *ev_srv);
 
     exit(rc);
 }
@@ -288,12 +302,19 @@ static int redirector_accept_client(event_ctx *ev_ctx, int fd, void *user_data)
                 goto error;
             }
 
+            /* Max session limit */
+            if (sem_trywait(&ev_srv->sessions_sem)) {
+                W2("Session limit reached: %d", MAX_SESSIONS);
+                goto error;
+            }
+
             args->rdr_ctx = rdr_ctx;
+            args->sessions_sem = &ev_srv->sessions_sem;
             s = socket_addrtostr_in(&args->client_sock,
                                     args->host_buf, args->service_buf);
             if (s) {
                 E_GAIERR(s, "Convert socket address to string");
-                goto error;
+                goto error_sempost;
             }
             N2("New connection from %s:%s to %s:%s: %d",
                 args->host_buf, args->service_buf,
@@ -306,10 +327,12 @@ static int redirector_accept_client(event_ctx *ev_ctx, int fd, void *user_data)
                 E_STRERR("Thread creation for %s:%s on fd %d",
                     args->host_buf, args->service_buf,
                     args->client_sock.fd);
-                goto error;
+                goto error_sempost;
             }
 
             return 1;
+error_sempost:
+            sem_post(&ev_srv->sessions_sem);
 error:
             socket_close(&args->client_sock);
             free(args);
@@ -385,6 +408,7 @@ client_mainloop(void *arg)
             args->rdr_ctx->fwd_ctx.service_buf);
 
 finish:
+    sem_post(args->sessions_sem);
     event_free(&ev_ctx);
     socket_close(&fwd);
     socket_close(&args->client_sock);

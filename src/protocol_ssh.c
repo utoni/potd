@@ -134,7 +134,7 @@ int ssh_init_cb(protocol_ctx *ctx)
     if (!d->sshbind)
         return 1;
     if (ssh_bind_options_set(d->sshbind, SSH_BIND_OPTIONS_BANNER,
-        "OpenSSH_7.4p1"))
+        /* "OpenSSH_7.4p1" */ "dropbear"))
     {
         return 1;
     }
