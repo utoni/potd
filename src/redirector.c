@@ -247,6 +247,7 @@ static int redirector_mainloop(event_ctx **ev_ctx, redirector_ctx *rdr_ctx[], si
     ev_srv = (server_event *) mmap(NULL, sizeof *ev_srv, PROT_READ|PROT_WRITE,
                                    MAP_SHARED|MAP_ANONYMOUS, -1, 0);
     assert( ev_srv );
+    memset(ev_srv, 0, sizeof *ev_srv);
     ev_srv->rdr_ctx = rdr_ctx;
     ev_srv->siz = siz;
     ev_srv->last_accept_stamp = time(NULL);
