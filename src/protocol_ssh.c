@@ -129,7 +129,9 @@ int ssh_init_cb(protocol_ctx *ctx)
     ctx->src.data = d;
 
     ssh_set_log_callback(ssh_log_cb);
-    ssh_set_log_level(SSH_LOG_FUNCTIONS);
+    //ssh_set_log_level(SSH_LOG_FUNCTIONS);
+    //ssh_set_log_level(SSH_LOG_PROTOCOL);
+    ssh_set_log_level(SSH_LOG_PACKET);
 
     if (!d->sshbind)
         return 1;
@@ -381,12 +383,8 @@ static void ssh_log_cb(int priority, const char *function,
     switch (priority) {
         case 0:
             W("libssh: %s", buffer);
-            break;
-        case 1:
-            N("libssh: %s", buffer);
-            break;
         default:
-            D("libssh: %s", buffer);
+            P("libssh: %s", buffer);
             break;
     }
 }

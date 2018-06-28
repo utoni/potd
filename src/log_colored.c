@@ -81,6 +81,9 @@ void log_fmt_colored(log_priority prio, const char *fmt, ...)
         case CMD:
             LOG(time, "[" BLU "CMD" RESET "]    ", my_pid, out);
             break;
+        case PROTOCOL:
+            LOG(time, "[" CYA "PROTO" RESET "]  ", my_pid, out);
+            break;
     }
 }
 
@@ -115,6 +118,7 @@ void log_fmtex_colored(log_priority prio, const char *srcfile,
             LOGEX(time, "[" RED "ERROR" RESET "]  ", my_pid, srcfile, line, out);
             break;
         case CMD:
+        case PROTOCOL:
             break;
     }
 }
@@ -151,6 +155,7 @@ void log_fmtexerr_colored(log_priority prio, const char *srcfile,
             LOGEXERR(time, "[" RED "ERROR" RESET "]  ", my_pid, srcfile, line, out, saved_errno);
             break;
         case CMD:
+        case PROTOCOL:
             break;
     }
 }

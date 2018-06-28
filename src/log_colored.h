@@ -9,6 +9,7 @@
 #define YEL   "\x1B[33;1m"
 #define RED   "\x1B[31;1;5m"
 #define BLU   "\x1B[34;1;1m"
+#define CYA   "\x1B[36;1;1m"
 /* LOG_SET_FUNCS comfort */
 #define LOG_COLORED_FUNCS log_open_colored, log_close_colored, \
     log_fmt_colored, log_fmtex_colored, log_fmtexerr_colored

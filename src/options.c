@@ -59,10 +59,11 @@ static struct opt options[OPT_MAX+1] = {
     OPT(OT_PATH, .str = POTD_LOGFILE, "log-file", "specify a logfile path\n",
         NULL),
     OPT(OT_STR,  .str = "notice", "log-level", "set the loglevel\n",
-        "error   - log only errors\n"
-        "warning - log errors,warnings\n"
-        "notice  - log errors,warnings,notices\n"
-        "debug   - log all messages\n"),
+        "error    - log only errors\n"
+        "warning  - log errors,warnings\n"
+        "notice   - log errors,warnings,notices\n"
+        "protocol - log errors,warnings,notices,protocol\n"
+        "debug    - log all messages\n"),
     OPT_NOARG("daemon", "fork into background if possible\n", NULL),
     OPT_LIST(OT_STR, .str = NULL, "redirect", "setup redirector service\n",
         "format [listen]:[forward-to-protocol]\n"
@@ -252,6 +253,7 @@ static void usage(const char *arg0, int print_copyright)
     char buf_help[BUFSIZ];
     char value[32];
 
+    (void) print_copyright;
 #ifdef HAVE_CONFIG_H
     if (print_copyright)
         fprintf(stderr, "\n%s (C) 2018 Toni Uhlig <%s>\n\n",

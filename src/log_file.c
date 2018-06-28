@@ -89,6 +89,9 @@ void log_fmt_file(log_priority prio, const char *fmt, ...)
         case CMD:
             LOG(flog, time, "[CMD]    ", my_pid, out);
             break;
+        case PROTOCOL:
+            LOG(flog, time, "[PROTO]  ", my_pid, out);
+            break;
     }
 }
 
@@ -123,6 +126,7 @@ void log_fmtex_file(log_priority prio, const char *srcfile,
             LOGEX(flog, time, "[ERROR]  ", my_pid, srcfile, line, out);
             break;
         case CMD:
+        case PROTOCOL:
             break;
     }
 }
@@ -163,6 +167,7 @@ void log_fmtexerr_file(log_priority prio, const char *srcfile,
                 saved_errno);
             break;
         case CMD:
+        case PROTOCOL:
             break;
     }
 }

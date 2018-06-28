@@ -40,9 +40,10 @@
       } \
     }
 #define C(fmt, ...) log_fmt(CMD, fmt, __VA_ARGS__)
+#define P(fmt, ...) log_fmt(PROTOCOL, fmt, __VA_ARGS__)
 
 typedef enum log_priority {
-    DEBUG = 0, NOTICE, WARNING, ERROR, CMD
+    DEBUG = 0, PROTOCOL, NOTICE, WARNING, ERROR, CMD
 } log_priority;
 
 typedef int (*log_open_cb) (void);
