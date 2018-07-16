@@ -1,24 +1,36 @@
 language: c
 sudo: required
-
 os:
-  - linux
-
+- linux
 compiler:
-  - gcc
-
+- gcc
 before_install:
-    - sudo apt-get -qq update
-    - sudo apt-get install -y -qq coreutils make autoconf automake gcc pkg-config valgrind wget libssl-dev
-    - wget 'https://www.libssh.org/files/0.7/libssh-0.7.5.tar.xz' -O ./libssh-0.7.5.tar.xz
-    - tar -xvf ./libssh-0.7.5.tar.xz
-    - cd ./libssh-0.7.5 && mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. && make && sudo make install && cd ../..
-
+- sudo apt-get -qq update
+- sudo apt-get install -y -qq coreutils make autoconf automake gcc pkg-config valgrind
+  wget libssl-dev
+- wget 'https://www.libssh.org/files/0.7/libssh-0.7.5.tar.xz' -O ./libssh-0.7.5.tar.xz
+- tar -xvf ./libssh-0.7.5.tar.xz
+- cd ./libssh-0.7.5 && mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr
+  .. && make && sudo make install && cd ../..
 after_failure:
-    - cat config.log
-
+- cat config.log
 script:
-    - ./autogen.sh
-    - CFLAGS="-DCAP_AUDIT_READ=0 -DCAP_AUDIT_WRITE=0" ./configure
-    - make V=s
-    - TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333 --rofile /tmp/potd-rofile --rodir /tmp/potd-rodir --root / --netns-rundir /tmp/potd-netns --ssh-rundir /tmp/potd-ssh
+- ./autogen.sh
+- ./configure
+- make V=s
+- TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222
+  --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333 --rofile /tmp/potd-rofile
+  --rodir /tmp/potd-rodir --root / --netns-rundir /tmp/potd-netns --ssh-rundir /tmp/potd-ssh
+env:
+  global:
+    secure: ZWiQ1tSucEHu8V1qajVPOi7mpqdQ2horCuRdjJJcU6zT+//HOcApsKS/zexLMwTSgazzYSVZXpakjW7PTWpo6MJWDyDyXKHL6yWpVaYlyieUjbvnidooYIn9kcqVi4yuEk3dGorRFcaVujHkLQyq4WtmrxtKQD7iepFJ5rDUHBTOHeeY+zhv3+gPWCeIMOB//0Df4KYd3rfPICmRMALrRYBXr9xX4UBF5BeIFgGFO6Y+j/Pr9LWrqTpAyShREs0QAn7f8ZUGtG9igNhueaDnjNe6Zi5Pl2XTd0R+YIBl/b6AlLtWbnf8MUoyNzy6wJkI9DThJXGpdItlE9/Jf1mDt3qvmdGfDFWL4HnflSVrmKl7TCfx4etHelU2BArhBp/PzvxYwIhMVv+cqmWv7DVtmWRDN/O9rqe1+g5Dy6I5t05t8ZbcLASDwVS9sa4+jwtLJMxLgySMQ2I2AihvrxYkRdahIYd4V7Ge9Gy8M8xPEkQa0riYb6phD4cx5FQY1oP9zpZMHKsF98aKMqAQOffwrwRe2hrJxxlo2anBSxs7y0fn33PrjX5r3orEMiPJ3mhuwMofxdxrKx9oBBiWmMYC2it3l/rNzHMYDNs/weKro8guTXRWwzRB7oeFJq9sEXbdtN4WoG4dXTYxsE/rHZStIcPgKFPJSwoSq6WIHYlh1wI=
+  matrix:
+    - CFLAGS="-DCAP_AUDIT_READ=0 -DCAP_AUDIT_WRITE=0"
+addons:
+  coverity_scan:
+    project:
+      name: lnslbrty/potd
+    notification_email: matzeton@googlemail.com
+    build_command_prepend: ./autogen.sh && ./configure
+    build_command: make
+    branch_pattern: coverity_scan
