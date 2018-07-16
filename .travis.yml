@@ -21,4 +21,4 @@ script:
     - ./autogen.sh
     - CFLAGS="-DCAP_AUDIT_READ=0 -DCAP_AUDIT_WRITE=0" ./configure
     - make V=s
-    - TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333 --rofile /tmp/potd-rofile --rodir /tmp/potd-rodir
+    - TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333 --rofile /tmp/potd-rofile --rodir /tmp/potd-rodir --root / --netns-rundir /tmp/potd-netns --ssh-rundir /tmp/potd-ssh

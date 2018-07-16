@@ -1067,6 +1067,19 @@ int selftest_minimal_requirements(void)
         E_STRERR("RO-directory '%s' check", getopt_str(OPT_RODIR));
         goto error;
     }
+    if (mkdir(getopt_str(OPT_ROOT), S_IRWXU) && errno != EEXIST) {
+        E_STRERR("ROOT-directory '%s' check", getopt_str(OPT_ROOT));
+        goto error;
+    }
+    if (mkdir(getopt_str(OPT_NETNS_RUN_DIR), S_IRWXU) && errno != EEXIST) {
+        E_STRERR("NETNS-directory '%s' check", getopt_str(OPT_NETNS_RUN_DIR));
+        goto error;
+    }
+
+    if (mkdir(getopt_str(OPT_SSH_RUN_DIR), S_IRWXU) && errno != EEXIST) {
+        E_STRERR("SSH-directory '%s' check", getopt_str(OPT_SSH_RUN_DIR));
+        goto error;
+    }
 
     if (getopt_used(OPT_RUNTEST)) {
         N("%s", "Selftest success");
