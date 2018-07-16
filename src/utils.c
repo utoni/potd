@@ -1052,10 +1052,11 @@ int selftest_minimal_requirements(void)
     if (buf[sizeof buf - 1] != 0)
         goto error;
 
-    if (getopt_used(OPT_RUNTEST)) {
-        N("%s", "Selftest success");
-        exit(EXIT_SUCCESS);
-    }
+#ifdef HAVE_VALGRIND
+    if (RUNNING_ON_VALGRIND)
+        W2("%s", "You are using valgrind, this is *ONLY* for debug reasons and may "
+                 "affect your overall security! Be warned.");
+#endif
 
     s = open(getopt_str(OPT_ROFILE), O_WRONLY|O_CREAT|O_TRUNC, 0);
     if (s < 0 && errno != EEXIST)
@@ -1063,6 +1064,10 @@ int selftest_minimal_requirements(void)
     if (mkdir(getopt_str(OPT_RODIR), S_IRWXU) && errno != EEXIST)
         goto error;
 
+    if (getopt_used(OPT_RUNTEST)) {
+        N("%s", "Selftest success");
+        exit(EXIT_SUCCESS);
+    }
     return 0;
 error:
     if (getopt_used(OPT_RUNTEST)) {
