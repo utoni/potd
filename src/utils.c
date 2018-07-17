@@ -63,6 +63,9 @@
 #endif
 
 #include "utils.h"
+#ifdef HAVE_SECCOMP
+#include "pseccomp.h"
+#endif
 #include "log.h"
 #include "options.h"
 
@@ -1041,9 +1044,14 @@ int selftest_minimal_requirements(void)
     int s;
     char buf[32] = {0};
     char test[64] = {0};
+    pid_t child_pid;
+#ifdef HAVE_SECCOMP
+    pseccomp_ctx *psc = NULL;
+#endif
 
     N2("%s", "Selftest ..");
 
+    /* do some basic runtime tests */
     memset(&test[0], 'A', sizeof test);
     test[sizeof test - 1] = 0;
     s = snprintf(buf, sizeof buf,  "%s", &test[0]);
@@ -1054,7 +1062,7 @@ int selftest_minimal_requirements(void)
 
 #ifdef HAVE_VALGRIND
     if (RUNNING_ON_VALGRIND)
-        W2("%s", "You are using valgrind, this is *ONLY* for debug reasons and may "
+        W2("%s", "You are using valgrind. This is *ONLY* for debug reasons and may "
                  "affect your overall security! Be warned.");
 #endif
 
@@ -1079,6 +1087,59 @@ int selftest_minimal_requirements(void)
     if (mkdir(getopt_str(OPT_SSH_RUN_DIR), S_IRWXU) && errno != EEXIST) {
         E_STRERR("SSH-directory '%s' check", getopt_str(OPT_SSH_RUN_DIR));
         goto error;
+    }
+
+    /* advanced sandbox tests */
+    if (getuid() == (uid_t) 0) {
+        child_pid = fork();
+
+        switch (child_pid) {
+            case -1:
+                E_STRERR("%s", "Forking");
+                goto error;
+                break;
+            case 0:
+                if (clearenv()) {
+                    E_STRERR("%s", "Clearing environment vairables");
+                    goto error;
+                }
+                if (cgroups_set() || cgroups_activate()) {
+                    E_STRERR("%s", "Activating cgroups");
+                    goto error;
+                }
+                if (unshare(CLONE_NEWUTS|CLONE_NEWPID|CLONE_NEWIPC|CLONE_NEWNS))
+                {
+                    E_STRERR("%s", "Unshare");
+                    goto error;
+                }
+                mount_root();
+#ifdef HAVE_SECCOMP
+                pseccomp_init(&psc,
+                    (getopt_used(OPT_SECCOMP_MINIMAL) ? PS_MINIMUM : 0));
+                if (pseccomp_default_rules(psc)) {
+                    E_STRERR("%s", "Seccomp");
+                    goto error;
+                }
+                pseccomp_free(&psc);
+#endif
+                child_pid = fork();
+                if (!child_pid) {
+                    if (safe_chroot(getopt_str(OPT_ROOT)))
+                        exit(EXIT_FAILURE);
+#ifdef HAVE_SECCOMP
+                    pseccomp_set_immutable();
+                    pseccomp_init(&psc,
+                        (getopt_used(OPT_SECCOMP_MINIMAL) ? PS_MINIMUM : 0));
+                    if (pseccomp_jail_rules(psc))
+                        exit(EXIT_FAILURE);
+#endif
+                    exit(EXIT_SUCCESS);
+                } else waitpid(child_pid, &s, 0);
+                exit(s);
+                break;
+            default:
+                waitpid(child_pid, &s, 0);
+        }
     }
 
     if (getopt_used(OPT_RUNTEST)) {
