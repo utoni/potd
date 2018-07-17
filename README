@@ -15,5 +15,5 @@ Priority == Item order!
 1. RESTful listener for output sampled data from different processes
     (send (real-time)statistics about protocols/jails/etc to highler level apps)
 2. ptrace support for jailed apps (trace syscalls)
-3. implement more protocols such as SCADA/MySQL/telnet/Jabber/IRC/IMAP/POP
+3. implement more protocols such as HTTP/SCADA/MySQL/telnet/...
 4. improved event handling (maybe libevent?)
