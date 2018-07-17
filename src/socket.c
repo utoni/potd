@@ -300,8 +300,10 @@ ssize_t socket_get_ifnames(const psocket *test_sock, char name[][IFNAMSIZ],
 
     ifc.ifc_len = sizeof buf;
     ifc.ifc_buf = buf;
-    if (ioctl(sock, SIOCGIFCONF, &ifc) == -1)
+    if (ioctl(sock, SIOCGIFCONF, &ifc) == -1) {
+        close(sock);
         return -1;
+    }
     it = ifc.ifc_req;
     end = it + (ifc.ifc_len / sizeof(struct ifreq));
 
