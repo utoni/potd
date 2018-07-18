@@ -43,6 +43,7 @@ Protocols to implement:
   - HTTP
   - ssh with openssh
   - SCADA
+  - MySQL
 
 Suits perfect for your favoured Desktop/Server/OpenWrt Linux system.
 

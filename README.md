@@ -3,7 +3,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8ee6023b774f4f31b58f13aeb28a4bc1)](https://www.codacy.com/app/lnslbrty/potd?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=lnslbrty/potd&amp;utm_campaign=Badge_Grade)
 [![GitHub issues](https://img.shields.io/github/issues/lnslbrty/potd.svg)](https://github.com/lnslbrty/potd/issues)
 [![GitHub license](https://img.shields.io/github/license/lnslbrty/potd.svg)](https://github.com/lnslbrty/potd/blob/master/COPYING)
-[![Gitter chat](https://badges.gitter.im/potd/Lobby.png)](https://gitter.im/potd/Lobby)
+[![Gitter chat](https://badges.gitter.im/honeypotdaemon/Lobby.png)](https://gitter.im/honeypotdaemon/Lobby)
 
 # honey[potd]aemon
 
@@ -14,6 +14,7 @@ This project is part of a BA thesis. It is currently in a pre-alpha state.
 Kernel/libc requirements: Cgroups, Namespaces (UTS, IPC, PID, NET, CGROUPS)
 
 Required: libssh, pthread
+
 Optional: libseccomp
 
 A chroot'able directory that contains an executable named '/bin/sh'.
@@ -33,12 +34,13 @@ Run:
     This will process, filter and redirect all traffic incoming from 0.0.0.0:2222 to the
     protocol handler at 127.0.0.1:22222 and if the protocol accepts it, it will forward
     all traffic to the jail/sandbox at 127.0.0.1:33333.
+    
     (clunky atm, will be simplified in the future)
   - see `./src/potd --help`
 
 ## Features
 
-The server supports currently only shell channels but exec and direct-tcp channels are coming soon!
+The ssh server currently supports only shell channels. But exec and direct-tcp channels are coming soon!
 
 Supported protocols (at the moment):
   - ssh with libssh
@@ -47,6 +49,7 @@ Protocols to implement:
   - HTTP
   - ssh with openssh
   - SCADA
+  - MySQL
 
 Suits perfect for your favoured Desktop/Server/OpenWrt Linux system.
 
