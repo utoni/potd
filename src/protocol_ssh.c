@@ -419,6 +419,7 @@ static void ssh_log_cb(int priority, const char *function,
     switch (priority) {
         case 0:
             W("libssh: %s", buffer);
+            break;
         default:
             P("libssh: %s", buffer);
             break;
