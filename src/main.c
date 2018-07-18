@@ -55,14 +55,14 @@
 #include "jail.h"
 
 static size_t jl_siz = 0;
-static jail_ctx *jl_ctx = NULL;
+static jail_ctx **jl_ctx = NULL;
 static pid_t jl_pid = -1;
 
 static size_t prt_siz = 0;
-static protocol_ctx *prt_ctx = NULL;
+static protocol_ctx **prt_ctx = NULL;
 
 static size_t rdr_siz = 0;
-static redirector_ctx *rdr_ctx = NULL;
+static redirector_ctx **rdr_ctx = NULL;
 static pid_t rdr_pid = -1;
 
 static void jail_preinit(char jail_hosts[][2][NI_MAXHOST],
@@ -241,7 +241,7 @@ static int process_options(int validate_only)
     siz = validate_hostport_option(OPT_JAIL, 0);
     if (siz && !validate_only) {
         jl_siz = siz;
-        jl_ctx = (jail_ctx *) calloc(siz, sizeof *jl_ctx);
+        jl_ctx = (jail_ctx **) calloc(siz, sizeof **jl_ctx);
         assert(jl_ctx);
 
         ol = NULL;
@@ -256,8 +256,8 @@ static int process_options(int validate_only)
             i++;
         }
 
-        jail_preinit(hosts, ports, &jl_ctx, jl_siz);
-        jl_pid = jail_init(&jl_ctx, jl_siz);
+        jail_preinit(hosts, ports, jl_ctx, jl_siz);
+        jl_pid = jail_init(jl_ctx, jl_siz);
     }
     if (siz)
         rc++;
@@ -265,7 +265,7 @@ static int process_options(int validate_only)
     siz = validate_hostport_option(OPT_PROTOCOL, 1);
     if (siz && !validate_only) {
         prt_siz = siz;
-        prt_ctx = (protocol_ctx *) calloc(siz, sizeof *prt_ctx);
+        prt_ctx = (protocol_ctx **) calloc(siz, sizeof **prt_ctx);
         assert(prt_ctx);
 
         ol = NULL;
@@ -281,8 +281,8 @@ static int process_options(int validate_only)
             i++; 
         }
 
-        ssh_protocol_preinit(hosts, ports, &prt_ctx, prt_siz);
-        ssh_protocol_init(&prt_ctx, prt_siz);
+        ssh_protocol_preinit(hosts, ports, prt_ctx, prt_siz);
+        ssh_protocol_init(prt_ctx, prt_siz);
     }
     if (siz)
         rc++;
@@ -290,7 +290,7 @@ static int process_options(int validate_only)
     siz  = validate_hostport_option(OPT_REDIRECT, 1);
     if (siz && !validate_only) {
         rdr_siz = siz;
-        rdr_ctx = (redirector_ctx *) calloc(siz, sizeof *rdr_ctx);
+        rdr_ctx = (redirector_ctx **) calloc(siz, sizeof **rdr_ctx);
         assert(rdr_ctx);
 
         ol = NULL;
@@ -306,8 +306,8 @@ static int process_options(int validate_only)
             i++;
         }
 
-        rdr_preinit(hosts, ports, &rdr_ctx, rdr_siz);
-        rdr_init(&rdr_ctx, rdr_siz);
+        rdr_preinit(hosts, ports, rdr_ctx, rdr_siz);
+        rdr_init(rdr_ctx, rdr_siz);
     }
     if (siz)
         rc++;
