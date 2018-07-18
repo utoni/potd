@@ -327,7 +327,8 @@ static int gen_default_keys(void)
             s |= system(cmd);
         } else s++;
     }
-    chmod(path, S_IRWXU);
+    if (chmod(path, S_IRUSR))
+        return 1;
     if (pwd)
         chown(path, pwd->pw_uid, pwd->pw_gid);
 
@@ -342,7 +343,8 @@ static int gen_default_keys(void)
             s |= system(cmd);
         } else s++;
     }
-    chmod(path, S_IRWXU);
+    if (chmod(path, S_IRUSR))
+        return 1;
     if (pwd)
         chown(path, pwd->pw_uid, pwd->pw_gid);
 
@@ -357,7 +359,8 @@ static int gen_default_keys(void)
             s |= system(cmd);
         } else s++;
     }
-    chmod(path, S_IRWXU);
+    if (chmod(path, S_IRUSR))
+        return 1;
     if (pwd)
         chown(path, pwd->pw_uid, pwd->pw_gid);
 
