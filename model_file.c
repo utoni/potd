@@ -15,6 +15,12 @@
  * must be uploaded by an admin in the analysis settings of
  */
 
-int safe_chroot(const char *newroot) {
+int safe_chroot(const char *newroot)
+{
+    __coverity_panic__();
+}
+
+int socket_connect_in(psocket *psock, struct addrinfo **results)
+{
     __coverity_panic__();
 }
