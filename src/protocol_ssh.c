@@ -320,8 +320,8 @@ static int gen_default_keys(void)
         rsa_key_suf);
     if (gen_export_sshkey(SSH_KEYTYPE_RSA, 1024, path)) {
         W("libssh %s key generation failed, using fallback ssh-keygen", "RSA");
-        remove(path);
-        if (snprintf(cmd, sizeof cmd, "ssh-keygen -t rsa -b 1024 -f %s -N '' "
+        if ((!remove(path) || errno == ENOENT) &&
+            snprintf(cmd, sizeof cmd, "ssh-keygen -t rsa -b 1024 -f %s -N '' "
             ">/dev/null 2>/dev/null", path) > 0)
         {
             s |= system(cmd);
@@ -336,8 +336,8 @@ static int gen_default_keys(void)
         dsa_key_suf);
     if (gen_export_sshkey(SSH_KEYTYPE_DSS, 1024, path)) {
         W("libssh %s key generation failed, using fallback ssh-keygen", "DSA");
-        remove(path);
-        if (snprintf(cmd, sizeof cmd, "ssh-keygen -t dsa -b 1024 -f %s -N '' "
+        if ((!remove(path) || errno == ENOENT) &&
+            snprintf(cmd, sizeof cmd, "ssh-keygen -t dsa -b 1024 -f %s -N '' "
             ">/dev/null 2>/dev/null", path) > 0)
         {
             s |= system(cmd);
@@ -352,8 +352,8 @@ static int gen_default_keys(void)
         ecdsa_key_suf);
     if (gen_export_sshkey(SSH_KEYTYPE_ECDSA, 1024, path)) {
         W("libssh %s key generation failed, using fallback ssh-keygen", "ECDSA");
-        remove(path);
-        if (snprintf(cmd, sizeof cmd, "ssh-keygen -t ecdsa -b 256 -f %s -N '' "
+        if ((!remove(path) || errno == ENOENT) &&
+            snprintf(cmd, sizeof cmd, "ssh-keygen -t ecdsa -b 256 -f %s -N '' "
             ">/dev/null 2>/dev/null", path) > 0)
         {
             s |= system(cmd);
