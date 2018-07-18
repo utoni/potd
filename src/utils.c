@@ -425,10 +425,8 @@ int safe_chroot(const char *newroot)
     }
 
     s = chroot(".");
-    if (s) {
-        E_STRERR("Change root directory to '%s'", ".");
+    if (s)
         return 1;
-    }
 
     s = chdir("/");
     if (s) {
