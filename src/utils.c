@@ -297,7 +297,8 @@ pid_t daemonize(int stay_foreground)
     if (!stay_foreground) {
         /* Change the working directory to the root directory */
         /* or another appropriated directory */
-        chdir("/");
+        if (chdir("/"))
+            return -1;
         /* Close all open file descriptors */
         assert( close_fds_except(-1) == 0 );
         assert( redirect_devnull_to(0, 1, 2, -1) == 0 );
