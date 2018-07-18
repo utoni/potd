@@ -1070,6 +1070,8 @@ int selftest_minimal_requirements(void)
     if (s < 0 && errno != EEXIST) {
         E_STRERR("RO-file '%s' check", getopt_str(OPT_ROFILE));
         goto error;
+    } else if (s >= 0) {
+        close(s);
     }
     if (mkdir(getopt_str(OPT_RODIR), S_IRWXU) && errno != EEXIST) {
         E_STRERR("RO-directory '%s' check", getopt_str(OPT_RODIR));
