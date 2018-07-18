@@ -295,7 +295,7 @@ ssize_t socket_get_ifnames(const psocket *test_sock, char name[][IFNAMSIZ],
     assert(test_sock);
     sock = socket(test_sock->family, test_sock->socktype,
                   test_sock->protocol);
-    if (sock <= 0)
+    if (sock < 0)
         return -1;
 
     ifc.ifc_len = sizeof buf;

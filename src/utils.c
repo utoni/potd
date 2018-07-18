@@ -747,7 +747,8 @@ static int cgroups_write_file(const char *cdir, const char *csub,
                 value, cdir, csub);
             s = 1;
         }
-        close(fd);
+        if (fd >= 0)
+            close(fd);
     }
 
     return s;
