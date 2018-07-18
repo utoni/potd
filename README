@@ -1,19 +1,54 @@
 honey[potd]aemon
 ================
 
-This project is part of a BA thesis. It is all but not finished yet.
-(Currently) Supported protocols:
-  ssh with libssh
+This project is part of a BA thesis. It is currently in a pre-alpha state.
+
+Dependencies
+============
+
+Kernel/libc requirements: Cgroups, Namespaces (UTS, IPC, PID, NET, CGROUPS)
+
+Required: libssh, pthread
+Optional: libseccomp
+
+A chroot'able directory that contains an executable named '/bin/sh'.
+
+HowTo
+=====
+
+Build:
+  - ./autogen.sh
+  - ./configure
+  - make
+
+Run:
+  - ./src/potd --redirect 0.0.0.0:2222:127.0.0.1:22222 \
+               --protocol 127.0.0.1:22222:127.0.0.1:33333 \
+               --jail 127.0.0.1:33333
+    This will process, filter and redirect all traffic incoming from 0.0.0.0:2222 to the
+    protocol handler at 127.0.0.1:22222 and if the protocol accepts it, it will forward
+    all traffic to the jail/sandbox at 127.0.0.1:33333. (clunky atm, will be simplified in the future)
+  - see ./src/potd --help
+
+Features
+========
+
+The server supports currently only shell channels but exec and direct-tcp channels are coming soon!
+
+Supported protocols (at the moment):
+  - ssh with libssh
+
+Protocols to implement:
+  - HTTP
+  - ssh with openssh
+  - SCADA
 
 Suits perfect for your favoured Desktop/Server/OpenWrt Linux system.
-
 
 TODOs
 =====
 
-Priority == Item order!
-1. RESTful listener for output sampled data from different processes
-    (send (real-time)statistics about protocols/jails/etc to highler level apps)
-2. ptrace support for jailed apps (trace syscalls)
-3. implement more protocols such as HTTP/SCADA/MySQL/telnet/...
-4. improved event handling (maybe libevent?)
+- RESTful listener for output sampled data from different processes
+    (send (real-time)statistics about protocols/jails/etc to higher level apps)
+- ptrace support for jailed processes (trace syscalls)
+- improved event handling (maybe libevent?)
