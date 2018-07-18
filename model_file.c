@@ -15,4 +15,6 @@
  * must be uploaded by an admin in the analysis settings of
  */
 
-/* empty modeling file for now */
+int safe_chroot(const char *newroot) {
+    __coverity_panic__();
+}
