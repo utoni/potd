@@ -329,8 +329,10 @@ static int gen_default_keys(void)
     }
     if (chmod(path, S_IRUSR))
         return 1;
-    if (pwd)
-        chown(path, pwd->pw_uid, pwd->pw_gid);
+    if (pwd) {
+        if (chown(path, pwd->pw_uid, pwd->pw_gid))
+            return 1;
+    }
 
     snprintf(path, sizeof path, "%s/%s", getopt_str(OPT_SSH_RUN_DIR),
         dsa_key_suf);
@@ -345,8 +347,10 @@ static int gen_default_keys(void)
     }
     if (chmod(path, S_IRUSR))
         return 1;
-    if (pwd)
-        chown(path, pwd->pw_uid, pwd->pw_gid);
+    if (pwd) {
+        if (chown(path, pwd->pw_uid, pwd->pw_gid))
+            return 1;
+    }
 
     snprintf(path, sizeof path, "%s/%s", getopt_str(OPT_SSH_RUN_DIR),
         ecdsa_key_suf);
@@ -361,8 +365,10 @@ static int gen_default_keys(void)
     }
     if (chmod(path, S_IRUSR))
         return 1;
-    if (pwd)
-        chown(path, pwd->pw_uid, pwd->pw_gid);
+    if (pwd) {
+        if (chown(path, pwd->pw_uid, pwd->pw_gid))
+            return 1;
+    }
 
     return s != 0;
 }
