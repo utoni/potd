@@ -1,5 +1,5 @@
 /*
- * log.c
+ * compat.c
  * potd is licensed under the BSD license:
  *
  * Copyright (c) 2018 Toni Uhlig <matzeton@googlemail.com>
@@ -31,31 +31,74 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
-#include <time.h>
+#include <errno.h>
 
-#include "log.h"
 #include "compat.h"
-
-log_priority log_prio = NOTICE;
-log_open_cb log_open = NULL;
-log_close_cb log_close = NULL;
-log_fmt_cb log_fmt = NULL;
-log_fmtex_cb log_fmtex = NULL;
-log_fmtexerr_cb log_fmtexerr = NULL;
 
 
 char *
-curtime_str(char *buf, size_t siz)
+potd_strtok(char *str, const char *delim, char **saveptr)
 {
-    time_t t;
-    struct tm *tmp, res;
+#ifdef HAVE_STRTOK_R
+    return strtok_r(str, delim, saveptr);
+#else
+    (void) saveptr;
 
-    t = time(NULL);
-    tmp = potd_localtime(&t, &res);
+    return strtok(str, delim);
+#endif
+}
 
-    if (tmp && !strftime(buf, siz, "%d %b %y - %H:%M:%S", tmp))
-        snprintf(buf, siz, "%s", "UNKNOWN_TIME");
+struct tm *
+potd_localtime(const time_t *timep, struct tm *result)
+{
+#ifdef HAVE_LOCALTIME_R
+    return localtime_r(timep, result);
+#else
+    (void) result;
 
-    return buf;
+    return localtime(timep);
+#endif
+}
+
+int
+potd_getpwnam(const char *name, struct passwd *pwd)
+{
+    struct passwd *result = NULL;
+
+    errno = 0;
+#ifdef HAVE_GETPWNAM_R
+    char buf[BUFSIZ];
+
+    return getpwnam_r(name, pwd, buf, sizeof buf, &result) || !result;
+#else
+    result = getpwnam(name);
+    if (result)
+        *pwd = *result;
+
+    return result == NULL;
+#endif
+}
+
+int
+potd_getgrnam(const char *name, struct group *grp)
+{
+    struct group *result = NULL;
+
+    errno = 0;
+#ifdef HAVE_GETGRNAM_R
+    char buf[BUFSIZ];
+
+    return getgrnam_r(name, grp, buf, sizeof buf, &result) || !result;
+#else
+    result = getgrnam(name);
+    if (result)
+        *grp = *result;
+
+    return result == NULL;
+#endif
 }

@@ -63,6 +63,7 @@
 #endif
 
 #include "utils.h"
+#include "compat.h"
 #ifdef HAVE_SECCOMP
 #include "pseccomp.h"
 #endif
@@ -379,8 +380,8 @@ int redirect_devnull_to(int fds, ...)
 
 int change_user_group(const char *user, const char *group)
 {
-    struct passwd *pwd = NULL;
-    struct group *grp = NULL;
+    struct passwd pwd;
+    struct group grp;
     gid_t gid;
 
     if (group)
@@ -388,22 +389,24 @@ int change_user_group(const char *user, const char *group)
     else
         D2("Change user to '%s' and its main group", user);
 
-    pwd = getpwnam(user);
-    if (!pwd)
+    if (potd_getpwnam(user, &pwd)) {
+        E_STRERR("Get uid from user '%s'", user);
         return 1;
+    }
 
     if (!group) {
-        gid = pwd->pw_gid;
+        gid = pwd.pw_gid;
     } else {
-        grp = getgrnam(group);
-        if (!grp)
+        if (potd_getgrnam(group, &grp)) {
+            E_STRERR("Get gid from group '%s'", group);
             return 1;
-        gid = grp->gr_gid;
+        }
+        gid = grp.gr_gid;
     }
 
     if (setresgid(gid, gid, gid))
         return 1;
-    if (setresuid(pwd->pw_uid, pwd->pw_uid, pwd->pw_uid))
+    if (setresuid(pwd.pw_uid, pwd.pw_uid, pwd.pw_uid))
         return 1;
 
     return 0;
@@ -1072,6 +1075,8 @@ int selftest_minimal_requirements(void)
         goto error;
     } else if (s >= 0) {
         close(s);
+        if (chmod(getopt_str(OPT_ROFILE), S_IRUSR|S_IWUSR))
+            goto error;
     }
     if (mkdir(getopt_str(OPT_RODIR), S_IRWXU) && errno != EEXIST) {
         E_STRERR("RO-directory '%s' check", getopt_str(OPT_RODIR));
@@ -1091,6 +1096,17 @@ int selftest_minimal_requirements(void)
         goto error;
     }
 
+    s = -1;
+    child_pid = fork();
+    if (!child_pid) {
+        if (change_default_user_group())
+            exit(EXIT_FAILURE);
+        else
+            exit(EXIT_SUCCESS);
+    } else waitpid(child_pid, &s, 0);
+    if (s)
+        goto error;
+
     /* advanced sandbox tests */
     if (getuid() == (uid_t) 0) {
         child_pid = fork();
@@ -1103,16 +1119,16 @@ int selftest_minimal_requirements(void)
             case 0:
                 if (clearenv()) {
                     E_STRERR("%s", "Clearing environment vairables");
-                    goto error;
+                    exit(EXIT_FAILURE);
                 }
                 if (cgroups_set() || cgroups_activate()) {
                     E_STRERR("%s", "Activating cgroups");
-                    goto error;
+                    exit(EXIT_FAILURE);
                 }
                 if (unshare(CLONE_NEWUTS|CLONE_NEWPID|CLONE_NEWIPC|CLONE_NEWNS))
                 {
                     E_STRERR("%s", "Unshare");
-                    goto error;
+                    exit(EXIT_FAILURE);
                 }
                 mount_root();
 #ifdef HAVE_SECCOMP
@@ -1120,10 +1136,12 @@ int selftest_minimal_requirements(void)
                     (getopt_used(OPT_SECCOMP_MINIMAL) ? PS_MINIMUM : 0));
                 if (pseccomp_default_rules(psc)) {
                     E_STRERR("%s", "Seccomp");
-                    goto error;
+                    exit(EXIT_FAILURE);
                 }
                 pseccomp_free(&psc);
 #endif
+
+                s = -1;
                 child_pid = fork();
                 if (!child_pid) {
                     if (safe_chroot(getopt_str(OPT_ROOT)))
@@ -1137,22 +1155,24 @@ int selftest_minimal_requirements(void)
 #endif
                     exit(EXIT_SUCCESS);
                 } else waitpid(child_pid, &s, 0);
+
                 exit(s);
-                break;
             default:
                 waitpid(child_pid, &s, 0);
+                if (s)
+                    goto error;
         }
     }
 
-    if (getopt_used(OPT_RUNTEST)) {
-        N("%s", "Selftest success");
+    N("%s", "Selftest success");
+    if (getopt_used(OPT_RUNTEST))
         exit(EXIT_SUCCESS);
-    }
+
     return 0;
 error:
-    if (getopt_used(OPT_RUNTEST)) {
-        E("%s", "Selftest failed");
+    E("%s", "Selftest failed");
+    if (getopt_used(OPT_RUNTEST))
         exit(EXIT_FAILURE);
-    }
+
     return 1;
 }

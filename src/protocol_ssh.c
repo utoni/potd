@@ -57,6 +57,7 @@
 #include "pseccomp.h"
 #endif
 #include "options.h"
+#include "compat.h"
 #include "utils.h"
 #include "log.h"
 
@@ -303,16 +304,16 @@ static int gen_default_keys(void)
     char path[PATH_MAX];
     char cmd[BUFSIZ];
     int s = 0;
-    struct passwd *pwd;
+    struct passwd pwd;
 
     errno = 0;
-    pwd = getpwnam(getopt_str(OPT_CHUSER));
+    if (potd_getpwnam(getopt_str(OPT_CHUSER), &pwd))
+        return 1;
+
     if (mkdir(getopt_str(OPT_SSH_RUN_DIR), R_OK|W_OK|X_OK) && errno == ENOENT) {
         if (chmod(getopt_str(OPT_SSH_RUN_DIR), S_IRWXU))
             return 1;
-        if (!pwd)
-            return 1;
-        if (chown(getopt_str(OPT_SSH_RUN_DIR), pwd->pw_uid, pwd->pw_gid))
+        if (chown(getopt_str(OPT_SSH_RUN_DIR), pwd.pw_uid, pwd.pw_gid))
             return 1;
     }
 
@@ -329,10 +330,8 @@ static int gen_default_keys(void)
     }
     if (chmod(path, S_IRUSR))
         return 1;
-    if (pwd) {
-        if (chown(path, pwd->pw_uid, pwd->pw_gid))
-            return 1;
-    }
+    if (chown(path, pwd.pw_uid, pwd.pw_gid))
+        return 1;
 
     snprintf(path, sizeof path, "%s/%s", getopt_str(OPT_SSH_RUN_DIR),
         dsa_key_suf);
@@ -347,10 +346,8 @@ static int gen_default_keys(void)
     }
     if (chmod(path, S_IRUSR))
         return 1;
-    if (pwd) {
-        if (chown(path, pwd->pw_uid, pwd->pw_gid))
-            return 1;
-    }
+    if (chown(path, pwd.pw_uid, pwd.pw_gid))
+        return 1;
 
     snprintf(path, sizeof path, "%s/%s", getopt_str(OPT_SSH_RUN_DIR),
         ecdsa_key_suf);
@@ -365,10 +362,8 @@ static int gen_default_keys(void)
     }
     if (chmod(path, S_IRUSR))
         return 1;
-    if (pwd) {
-        if (chown(path, pwd->pw_uid, pwd->pw_gid))
-            return 1;
-    }
+    if (chown(path, pwd.pw_uid, pwd.pw_gid))
+        return 1;
 
     return s != 0;
 }
@@ -630,7 +625,7 @@ static int auth_password(const char *user, const char *pass,
     size_t i;
     double d;
     time_t o, t = time(NULL);
-    struct tm *tmp;
+    struct tm tmp;
     char time_str[64] = {0};
 
     for (i = 0; i < CACHE_MAX; ++i) {
@@ -644,8 +639,9 @@ static int auth_password(const char *user, const char *pass,
                 strncmp(pass, cache[i].pass, PASS_LEN) == 0 &&
                 strnlen(pass, PASS_LEN) == strnlen(cache[i].pass, PASS_LEN))
             {
-                tmp = localtime(&o);
-                if (!strftime(time_str, sizeof time_str, "%H:%M:%S", tmp))
+                if (!potd_localtime(&o, &tmp))
+                    continue;
+                if (!strftime(time_str, sizeof time_str, "%H:%M:%S", &tmp))
                     snprintf(time_str, sizeof time_str, "%s", "UNKNOWN_TIME");
                 N("Got cached user/pass '%s'/'%s' from %s",
                     user, pass, time_str);

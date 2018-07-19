@@ -66,4 +66,4 @@ cppcheck:
   stage: analysis
   script:
     - pacman -Syu --noconfirm cppcheck
-    - cppcheck --enable=all --inconclusive --std=posix .
+    - cppcheck --force --enable=warning,unusedFunction,performance,portability --inconclusive --std=posix -DNDEBUG=1 -DHAVE_STRTOK_R=1 -DHAVE_LOCALTIME_R=1 -DHAVE_GETPWNAM_R=1 -DHAVE_GETGRNAM_R=1 .

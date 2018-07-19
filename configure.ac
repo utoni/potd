@@ -135,6 +135,8 @@ AC_CHECK_FUNCS([open read write close mmap munmap malloc free memset memcpy fork
                 setsockopt socket connect accept bind listen \
                 time localtime difftime strtol strtoll getopt_long_only], [],
       [ AC_MSG_ERROR([required function not available]) ])
+dnl check reentrant function availability
+AC_CHECK_FUNCS([strtok_r localtime_r getpwnam_r getgrnam_r])
 dnl GAI functions
 AC_CHECK_FUNCS([getaddrinfo getnameinfo freeaddrinfo], [],
       [ AC_MSG_ERROR([required GAI function not available]) ])
