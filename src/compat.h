@@ -1,5 +1,5 @@
 /*
- * log.c
+ * compat.h
  * potd is licensed under the BSD license:
  *
  * Copyright (c) 2018 Toni Uhlig <matzeton@googlemail.com>
@@ -31,31 +31,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#ifndef POTD_COMPAT_H
+#define POTD_COMPAT_H 1
+
+#include <string.h>
 #include <time.h>
-
-#include "log.h"
-#include "compat.h"
-
-log_priority log_prio = NOTICE;
-log_open_cb log_open = NULL;
-log_close_cb log_close = NULL;
-log_fmt_cb log_fmt = NULL;
-log_fmtex_cb log_fmtex = NULL;
-log_fmtexerr_cb log_fmtexerr = NULL;
+#include <pwd.h>
+#include <grp.h>
 
 
 char *
-curtime_str(char *buf, size_t siz)
-{
-    time_t t;
-    struct tm *tmp, res;
+potd_strtok(char *str, const char *delim, char **saveptr);
 
-    t = time(NULL);
-    tmp = potd_localtime(&t, &res);
+struct tm *
+potd_localtime(const time_t *timep, struct tm *result);
 
-    if (tmp && !strftime(buf, siz, "%d %b %y - %H:%M:%S", tmp))
-        snprintf(buf, siz, "%s", "UNKNOWN_TIME");
+int
+potd_getpwnam(const char *name, struct passwd *pwd);
 
-    return buf;
-}
+int
+potd_getgrnam(const char *name, struct group *grp);
+
+#endif

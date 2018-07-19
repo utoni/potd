@@ -49,6 +49,7 @@
 #include <assert.h>
 
 #include "log.h"
+#include "compat.h"
 #include "utils.h"
 #include "options.h"
 
@@ -239,7 +240,7 @@ static MountData *
 get_last_mount(void)
 {
     FILE *fp = fopen("/proc/self/mountinfo", "r");
-    char *ptr;
+    char *ptr, *saveptr = NULL;
     int cnt = 1;
     size_t len;
 
@@ -265,11 +266,11 @@ get_last_mount(void)
     //		mdata.dir: /home/netblue/.cache
     //		mdata.fstype: tmpfs
     memset(&mdata, 0, sizeof(mdata));
-    ptr = strtok(mbuf, " ");
+    ptr = potd_strtok(mbuf, " ", &saveptr);
     if (!ptr)
         goto errexit;
 
-    while ((ptr = strtok(NULL, " ")) != NULL) {
+    while ((ptr = potd_strtok(NULL, " ", &saveptr)) != NULL) {
         cnt++;
         if (cnt == 4) {
             mdata.fsname = ptr;
@@ -279,11 +280,11 @@ get_last_mount(void)
         }
     }
 
-    ptr = strtok(NULL, "-");
+    ptr = potd_strtok(NULL, "-", &saveptr);
     if (!ptr)
         goto errexit;
 
-    ptr = strtok(NULL, " ");
+    ptr = potd_strtok(NULL, " ", &saveptr);
     if (!ptr)
         goto errexit;
     mdata.fstype = ptr++;

@@ -6,7 +6,7 @@ compiler:
 - gcc
 before_install:
 - sudo apt-get -qq update
-- sudo apt-get install -y -qq coreutils make autoconf automake gcc pkg-config valgrind
+- sudo apt-get install -y -qq coreutils make autoconf automake gcc pkg-config valgrind cppcheck
   wget libssl-dev
 - wget 'https://www.libssh.org/files/0.7/libssh-0.7.5.tar.xz' -O ./libssh-0.7.5.tar.xz
 - tar -xvf ./libssh-0.7.5.tar.xz
@@ -21,6 +21,7 @@ script:
 - TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222
   --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333 --rofile /tmp/potd-rofile
   --rodir /tmp/potd-rodir --root / --netns-rundir /tmp/potd-netns --ssh-rundir /tmp/potd-ssh
+- cppcheck --force --enable=warning,unusedFunction,performance,portability --inconclusive --std=posix -DNDEBUG=1 -DHAVE_STRTOK_R=1 -DHAVE_LOCALTIME_R=1 -DHAVE_GETPWNAM_R=1 -DHAVE_GETGRNAM_R=1 .
 env:
   global:
     secure: ZWiQ1tSucEHu8V1qajVPOi7mpqdQ2horCuRdjJJcU6zT+//HOcApsKS/zexLMwTSgazzYSVZXpakjW7PTWpo6MJWDyDyXKHL6yWpVaYlyieUjbvnidooYIn9kcqVi4yuEk3dGorRFcaVujHkLQyq4WtmrxtKQD7iepFJ5rDUHBTOHeeY+zhv3+gPWCeIMOB//0Df4KYd3rfPICmRMALrRYBXr9xX4UBF5BeIFgGFO6Y+j/Pr9LWrqTpAyShREs0QAn7f8ZUGtG9igNhueaDnjNe6Zi5Pl2XTd0R+YIBl/b6AlLtWbnf8MUoyNzy6wJkI9DThJXGpdItlE9/Jf1mDt3qvmdGfDFWL4HnflSVrmKl7TCfx4etHelU2BArhBp/PzvxYwIhMVv+cqmWv7DVtmWRDN/O9rqe1+g5Dy6I5t05t8ZbcLASDwVS9sa4+jwtLJMxLgySMQ2I2AihvrxYkRdahIYd4V7Ge9Gy8M8xPEkQa0riYb6phD4cx5FQY1oP9zpZMHKsF98aKMqAQOffwrwRe2hrJxxlo2anBSxs7y0fn33PrjX5r3orEMiPJ3mhuwMofxdxrKx9oBBiWmMYC2it3l/rNzHMYDNs/weKro8guTXRWwzRB7oeFJq9sEXbdtN4WoG4dXTYxsE/rHZStIcPgKFPJSwoSq6WIHYlh1wI=

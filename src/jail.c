@@ -337,7 +337,7 @@ static int jail_childfn(prisoner_process *ctx)
     snprintf(path, sizeof path, "%s%s", ctx->newroot, path_shell);
     D2("Checking Shell '%s'", path);
     if (access(path, R_OK|X_OK))
-        FATAL("Shell '%s' is not accessible", path);
+        FATAL("Access to shell '%s'", path);
 
     snprintf(path, sizeof path, "%s%s", ctx->newroot, path_dev);
     D2("Mounting devtmpfs to '%s'", path);
@@ -444,7 +444,8 @@ static int jail_childfn(prisoner_process *ctx)
             caps_drop_all();
 #endif
 
-            sethostname("openwrt", SIZEOF("openwrt"));
+            if (sethostname("openwrt", SIZEOF("openwrt")))
+                exit(EXIT_FAILURE);
             if (execl(path_shell, path_shell, (char *) NULL))
                 exit(EXIT_FAILURE);
             break;

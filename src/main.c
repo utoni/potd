@@ -371,8 +371,8 @@ int main(int argc, char *argv[])
     N("%s (C) 2018 Toni Uhlig <%s>", PACKAGE_STRING, PACKAGE_BUGREPORT);
 #endif
 
-    ABORT_ON_FATAL( selftest_minimal_requirements(),
-        "Selfcheck" );
+    if (selftest_minimal_requirements())
+        exit(EXIT_FAILURE);
 
     if (geteuid() != 0) {
         E("%s", "I was made for root!");
