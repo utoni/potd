@@ -1098,6 +1098,10 @@ int selftest_minimal_requirements(void)
         goto error;
     }
 
+    /*
+     * The following tests do neither work on travis-ci nor on gitlab.
+     * FIXME: fork() broken on some docker containers?
+     */
 /*
     s = -1;
     child_pid = fork();
