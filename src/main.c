@@ -241,7 +241,7 @@ static int process_options(int validate_only)
     siz = validate_hostport_option(OPT_JAIL, 0);
     if (siz && !validate_only) {
         jl_siz = siz;
-        jl_ctx = (jail_ctx **) calloc(siz, sizeof **jl_ctx);
+        jl_ctx = (jail_ctx **) calloc(siz, sizeof(jail_ctx));
         assert(jl_ctx);
 
         ol = NULL;
@@ -265,7 +265,7 @@ static int process_options(int validate_only)
     siz = validate_hostport_option(OPT_PROTOCOL, 1);
     if (siz && !validate_only) {
         prt_siz = siz;
-        prt_ctx = (protocol_ctx **) calloc(siz, sizeof **prt_ctx);
+        prt_ctx = (protocol_ctx **) calloc(siz, sizeof(protocol_ctx));
         assert(prt_ctx);
 
         ol = NULL;
@@ -290,7 +290,7 @@ static int process_options(int validate_only)
     siz  = validate_hostport_option(OPT_REDIRECT, 1);
     if (siz && !validate_only) {
         rdr_siz = siz;
-        rdr_ctx = (redirector_ctx **) calloc(siz, sizeof **rdr_ctx);
+        rdr_ctx = (redirector_ctx **) calloc(siz, sizeof(redirector_ctx));
         assert(rdr_ctx);
 
         ol = NULL;
