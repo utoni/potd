@@ -6,17 +6,15 @@ stages:
 build-debian:
   image: debian:stable
   script:
-    - apt-get update -qq && apt-get install -y -qq coreutils make autoconf automake gcc pkg-config libseccomp-dev libssh-dev valgrind
+    - apt-get update -qq && apt-get install -y -qq coreutils make autoconf automake gcc pkg-config libseccomp-dev libssh-dev
     - ./autogen.sh
     - CFLAGS="-DHAVE_SECCOMP=1" ./configure
     - make V=s
-    - TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
     - cp ./src/potd ./src/potd-full
     - cp ./config.log ./config-full.log
     - apt-get purge -y -qq libseccomp2 libseccomp-dev
     - ./configure
     - make V=s
-    - TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
   stage: build
   artifacts:
     paths:
@@ -28,17 +26,15 @@ build-debian:
 build-arch:
   image: base/archlinux
   script:
-    - pacman -Syu --noconfirm coreutils make autoconf automake gcc pkg-config libseccomp libssh valgrind
+    - pacman -Syu --noconfirm coreutils make autoconf automake gcc pkg-config libseccomp libssh
     - ./autogen.sh
     - CFLAGS="-DHAVE_SECCOMP=1" ./configure
     - make V=s
-    - TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33333
     - cp ./src/potd ./src/potd-full
     - cp ./config.log ./config-full.log
     - pacman -Rsn --noconfirm libseccomp
     - ./configure
     - make V=s
-    - TERM=linux valgrind --error-exitcode=1 ./src/potd --test --redirect 127.0.0.1:2222:127.0.0.1:22222 --protocol 127.0.0.1:22222:127.0.0.1:33333 --jail 127.0.0.1:33332
   stage: test
   artifacts:
     paths:
@@ -66,4 +62,4 @@ cppcheck:
   stage: analysis
   script:
     - pacman -Syu --noconfirm cppcheck
-    - cppcheck --force --enable=warning,unusedFunction,performance,portability --inconclusive --std=posix -DNDEBUG=1 -DHAVE_STRTOK_R=1 -DHAVE_LOCALTIME_R=1 -DHAVE_GETPWNAM_R=1 -DHAVE_GETGRNAM_R=1 .
+    - cppcheck --force --enable=warning,unusedFunction,performance,portability --inconclusive --std=posix -DNDEBUG=1 -DHAVE_STRTOK_R=1 -DHAVE_LOCALTIME_R=1 -DHAVE_GETPWNAM_R=1 -DHAVE_GETGRNAM_R=1 ./src
