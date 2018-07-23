@@ -93,6 +93,7 @@ void log_fmt_colored(log_priority prio, const char *fmt, ...)
         return;
     assert(fmt);
     va_start(arglist, fmt);
+    /* Flawfinder: ignore */
     assert( vsnprintf(&out[0], LOGMSG_MAXLEN, fmt, arglist) >= 0 );
     va_end(arglist);
 
@@ -132,6 +133,7 @@ void log_fmtex_colored(log_priority prio, const char *srcfile,
         return;
     assert(fmt);
     va_start(arglist, fmt);
+    /* Flawfinder: ignore */
     assert( vsnprintf(&out[0], LOGMSG_MAXLEN, fmt, arglist) >= 0 );
     va_end(arglist);
 
@@ -169,6 +171,7 @@ void log_fmtexerr_colored(log_priority prio, const char *srcfile,
         return;
     assert(fmt);
     va_start(arglist, fmt);
+    /* Flawfinder: ignore */
     assert( vsnprintf(&out[0], LOGMSG_MAXLEN, fmt, arglist) >= 0 );
     va_end(arglist);
 

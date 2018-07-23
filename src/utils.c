@@ -428,6 +428,7 @@ int safe_chroot(const char *newroot)
         return 1;
     }
 
+    /* Flawfinder: ignore */
     s = chroot(".");
     if (s)
         return 1;
@@ -467,7 +468,7 @@ int is_dir(const char *fname) {
     if (fname[strlen(fname) - 1] == '/') {
         rv = stat(fname, &s);
     } else {
-        snprintf(tmp, sizeof tmp, "%s/", fname);
+        snprintf(tmp, sizeof tmp, "%s/", fname); /* Flawfinder: ignore */
         rv = stat(tmp, &s);
     }
 
@@ -593,7 +594,7 @@ int setup_network_namespace(const char *name)
     int made_netns_run_dir_mount = 0;
 
     snprintf(netns_path, sizeof netns_path, "%s/%s",
-        getopt_str(OPT_NETNS_RUN_DIR), name);
+        getopt_str(OPT_NETNS_RUN_DIR), name); /* Flawfinder: ignore */
     D2("Network Namespace path '%s'", netns_path);
 
     if (mkdir(getopt_str(OPT_NETNS_RUN_DIR),
@@ -659,7 +660,7 @@ int switch_network_namespace(const char *name)
     int netns;
 
     snprintf(net_path, sizeof(net_path), "%s/%s",
-        getopt_str(OPT_NETNS_RUN_DIR), name);
+        getopt_str(OPT_NETNS_RUN_DIR), name); /* Flawfinder: ignore */
     netns = open(net_path, O_RDONLY | O_CLOEXEC);
     if (netns < 0) {
         E_STRERR("Open network namespace '%s'", name);
@@ -701,7 +702,7 @@ int create_device_file_checked(const char *mount_path, const char *device_file,
     struct stat devbuf;
     char devpath[plen+dlen+2];
 
-    snprintf(devpath, plen+dlen+2, "%s/%s", mount_path, device_file);
+    snprintf(devpath, plen+dlen+2, "%s/%s", mount_path, device_file); /* Flawfinder: ignore */
     s = stat(devpath, &devbuf);
 
     if (s && errno != EEXIST && errno != ENOENT) {
@@ -743,7 +744,8 @@ static int cgroups_write_file(const char *cdir, const char *csub,
     assert(cdir && csub && value);
 
     D2("Write '%s' to '%s/%s'", value, cdir, csub);
-    if (snprintf(buf, sizeof buf, "%s/%s", cdir, csub) > 0) {
+    if (snprintf(buf, sizeof buf, "%s/%s", cdir, csub) > 0) /* Flawfinder: ignore */
+    {
         if ((fd = open(buf, O_WRONLY)) < 0 ||
              write(fd, value, siz) <= 0)
         {
@@ -864,17 +866,17 @@ int cgroups_activate(void)
     char buf[32] = {0};
     const char tasks[] = "tasks";
 
-    s = snprintf(buf, sizeof buf, "%d", p);
+    s = snprintf(buf, sizeof buf, "%d", p); /* Flawfinder: ignore */
     if (s <= 0)
         return 1;
     s = cgroups_write_file(_cgmem, tasks, buf, s);
 
-    s = snprintf(buf, sizeof buf, "%d", p);
+    s = snprintf(buf, sizeof buf, "%d", p); /* Flawfinder: ignore */
     if (s <= 0)
         return 1;
     s = cgroups_write_file(_cgcpu, tasks, buf, s);
 
-    s = snprintf(buf, sizeof buf, "%d", p);
+    s = snprintf(buf, sizeof buf, "%d", p); /* Flawfinder: ignore */
     if (s <= 0)
         return 1;
     s = cgroups_write_file(_cgpid, tasks, buf, s);
@@ -892,9 +894,11 @@ int update_guid_map(pid_t pid, unsigned int map[3], int update_uidmap)
     char buf[64];
 
     if (pid < 0) {
+        /* Flawfinder: ignore */
         s = snprintf(buf, sizeof buf, path_self,
                 (update_uidmap ? "uid_map" : "gid_map"));
     } else {
+        /* Flawfinder: ignore */
         s = snprintf(buf, sizeof buf, path_pid, pid,
                 (update_uidmap ? "uid_map" : "gid_map"));
     }
@@ -905,7 +909,7 @@ int update_guid_map(pid_t pid, unsigned int map[3], int update_uidmap)
     if (fd < 0)
         return 1;
 
-    s = snprintf(buf, sizeof buf, "%u %u %u\n", map[0], map[1], map[2]);
+    s = snprintf(buf, sizeof buf, "%u %u %u\n", map[0], map[1], map[2]); /* Flawfinder: ignore */
     written = write(fd, buf, s);
     if (written <= 0)
         return 1;
@@ -978,7 +982,7 @@ void escape_ascii_string(const char ascii[], size_t siz, char **dest, size_t *ne
             j++;
         } else {
             bin2hex_char(ascii[i], hexbyte);
-            snprintf((*dest)+j, binsiz+1, "%s", hexbyte);
+            snprintf((*dest)+j, binsiz+1, "%s", hexbyte); /* Flawfinder: ignore */
             j += binsiz;
         }
     }
@@ -1029,7 +1033,7 @@ size_t parse_hostport_str(const char *str, char hbuf[NI_MAXHOST],
     if (!siz)
         return 0;
     if (snprintf(hbuf, NI_MAXHOST, "%.*s", (int) hostport_siz[0],
-        hostport[0]) <= 0)
+        hostport[0]) <= 0) /* Flawfinder: ignore */
     {
         return 0;
     }

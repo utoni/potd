@@ -156,13 +156,13 @@ static int parse_path(opt_ptr *d, char *some_path)
     char path[PATH_MAX] = {0};
     char *dir, *base;
 
-    d->str_dup = realpath(some_path, NULL);
+    d->str_dup = realpath(some_path, NULL); /* Flawfinder: ignore */
     if (!d->str_dup && errno == ENOENT) {
         snprintf(path_dir, sizeof path_dir, "%s", some_path);
         dir = dirname(path_dir);
         if (!dir)
             return 1;
-        dir = realpath(dir, NULL);
+        dir = realpath(dir, NULL); /* Flawfinder: ignore */
         if (!dir)
             return 1;
 

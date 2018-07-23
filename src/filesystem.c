@@ -107,7 +107,7 @@ static void disable_file(fs_oper op, const char *filename)
     last_disable = UNSUCCESSFUL;
 
     // Resolve all symlinks
-    fname = realpath(filename, NULL);
+    fname = realpath(filename, NULL); /* Flawfinder: ignore */
     if (fname == NULL && errno != EACCES) {
         if (errno == ENOENT)
             W_STRERR("%s: realpath '%s'", __func__, filename);
@@ -341,7 +341,7 @@ static void fs_rdwr(const char *dir)
 
     // check directory exists and ensure we have a resolved path
     // the resolved path allows to run a sanity check after the mount
-    path = realpath(dir, NULL);
+    path = realpath(dir, NULL); /* Flawfinder: ignore */
     if (path == NULL)
         return;
 
@@ -484,7 +484,7 @@ static void fs_var_lock(void)
             FATAL("%s: mounting /lock", __func__);
         }
     } else {
-        lnk = realpath("/var/lock", NULL);
+        lnk = realpath("/var/lock", NULL); /* Flawfinder: ignore */
         if (lnk) {
             if (!is_dir(lnk)) {
                 // create directory

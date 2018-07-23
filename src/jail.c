@@ -446,6 +446,7 @@ static int jail_childfn(prisoner_process *ctx)
 
             if (sethostname("openwrt", SIZEOF("openwrt")))
                 exit(EXIT_FAILURE);
+            /* Flawfinder: ignore */
             if (execl(path_shell, path_shell, (char *) NULL))
                 exit(EXIT_FAILURE);
             break;
