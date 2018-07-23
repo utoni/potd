@@ -1051,6 +1051,7 @@ int selftest_minimal_requirements(void)
     int s;
     char buf[32] = {0};
     char test[64] = {0};
+
     pid_t child_pid;
 #ifdef HAVE_SECCOMP
     pseccomp_ctx *psc = NULL;
@@ -1100,6 +1101,10 @@ int selftest_minimal_requirements(void)
         goto error;
     }
 
+    /*
+     * The following tests do neither work on travis-ci nor on gitlab.
+     * FIXME: fork() broken on some docker containers?
+     */
     s = -1;
     child_pid = fork();
     if (!child_pid) {

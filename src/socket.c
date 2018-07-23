@@ -137,6 +137,8 @@ int socket_bind_in(psocket *psock, struct addrinfo **results)
 finalise:
     socket_freeaddr(results);
 
+    /* suppress coverity fals-positive: fd out of scope */
+    /* coverity[leaked_handle] */
     return s;
 }
 
@@ -209,6 +211,8 @@ int socket_connect_in(psocket *psock, struct addrinfo **results)
 finalise:
     socket_freeaddr(results);
 
+    /* suppress coverity fals-positive: fd out of scope */
+    /* coverity[leaked_handle] */
     return s;
 }
 
@@ -329,12 +333,15 @@ ssize_t socket_get_ifnames(const psocket *test_sock, char name[][IFNAMSIZ],
 int socket_set_ifaddr(const psocket *test_sock,
                       const char *ifname, const char *addr, const char *mask)
 {
-    struct ifreq ifr = {0};
+    struct ifreq ifr;
     int sock;
 
     assert(test_sock);
+    memset(&ifr, 0, sizeof ifr);
     sock = socket(test_sock->family, test_sock->socktype,
                   test_sock->protocol);
+    if (sock < 0)
+        return 1;
     strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
 
     ifr.ifr_addr.sa_family = AF_INET;
@@ -345,6 +352,7 @@ int socket_set_ifaddr(const psocket *test_sock,
     ioctl(sock, SIOCSIFNETMASK, &ifr);
 
     ioctl(sock, SIOCGIFFLAGS, &ifr);
+    /* coverity[buffer_size_warning] */
     strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
     ifr.ifr_flags |= (IFF_UP | IFF_RUNNING);
 
