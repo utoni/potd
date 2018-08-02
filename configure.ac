@@ -117,7 +117,7 @@ AC_CHECK_HEADERS([stdio.h ctype.h assert.h sched.h signal.h time.h errno.h pwd.h
       [ AC_MSG_ERROR([required std header not available]) ])
 
 dnl Check for system specific header files
-AC_CHECK_HEADERS([linux/capability.h sys/wait.h sys/ioctl.h net/if.h netinet/in.h libgen.h], [],
+AC_CHECK_HEADERS([linux/capability.h linux/securebits.h sys/signalfd.h sys/wait.h sys/ioctl.h net/if.h netinet/in.h libgen.h], [],
       [ AC_MSG_ERROR([required system specific header not available]) ])
 AC_CHECK_HEADERS([libutil.h pthread.h semaphore.h syslog.h sys/prctl.h linux/limits.h \
                   sys/uio.h poll.h sys/epoll.h sys/sysmacros.h sys/mount.h sys/mman.h \
@@ -341,6 +341,20 @@ AC_COMPILE_IFELSE([
       AC_MSG_RESULT([yes]),
       [ AC_MSG_RESULT([no])
         AC_MSG_ERROR([assertion macro missing]) ])
+
+AC_MSG_CHECKING([if ambient raise securebits available])
+AC_COMPILE_IFELSE([
+      AC_LANG_SOURCE([#include <sys/prctl.h>
+                      #include <linux/securebits.h>
+        int fn(void) \
+        { prctl(SECBIT_NO_CAP_AMBIENT_RAISE | \
+                SECBIT_NO_CAP_AMBIENT_RAISE_LOCKED); \
+          return 0; }])
+      ],
+      [ AC_MSG_RESULT([yes])
+        AC_DEFINE([HAVE_SECUREBITS_AMBIENT], [1],
+                  [Set to 1 if securebits are available.]) ],
+      [ AC_MSG_RESULT([no]) ])
 
 AC_MSG_CHECKING([for working capability drop])
 AC_COMPILE_IFELSE([

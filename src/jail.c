@@ -42,7 +42,9 @@
 #include <pty.h>
 #include <utmp.h>
 #include <limits.h>
+#ifdef HAVE_SECUREBITS_AMBIENT
 #include <linux/securebits.h>
+#endif
 #include <sys/signalfd.h>
 #include <sys/wait.h>
 #include <sys/prctl.h>
@@ -310,10 +312,12 @@ static int jail_childfn(prisoner_process *ctx)
     set_procname("[potd] jail-client");
     if (prctl(PR_SET_PDEATHSIG, SIGTERM) != 0)
         FATAL("%s", "Jail child setting deathsig");
+#ifdef HAVE_SECUREBITS_AMBIENT
     if (prctl(PR_SET_SECUREBITS,
               SECBIT_NOROOT | SECBIT_NOROOT_LOCKED |
               SECBIT_NO_CAP_AMBIENT_RAISE | SECBIT_NO_CAP_AMBIENT_RAISE_LOCKED))
         FATAL("%s", "Jail child setting securebits");
+#endif
     if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0))
         FATAL("%s", "Jail child setting no new privs");
 
