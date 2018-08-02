@@ -42,6 +42,7 @@
 #include <pty.h>
 #include <utmp.h>
 #include <limits.h>
+#include <linux/securebits.h>
 #include <sys/signalfd.h>
 #include <sys/wait.h>
 #include <sys/prctl.h>
@@ -308,7 +309,13 @@ static int jail_childfn(prisoner_process *ctx)
     self_pid = getpid();
     set_procname("[potd] jail-client");
     if (prctl(PR_SET_PDEATHSIG, SIGTERM) != 0)
-        FATAL("Jail child prctl for pid %d", self_pid);
+        FATAL("%s", "Jail child setting deathsig");
+    if (prctl(PR_SET_SECUREBITS,
+              SECBIT_NOROOT | SECBIT_NOROOT_LOCKED |
+              SECBIT_NO_CAP_AMBIENT_RAISE | SECBIT_NO_CAP_AMBIENT_RAISE_LOCKED))
+        FATAL("%s", "Jail child setting securebits");
+    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0))
+        FATAL("%s", "Jail child setting no new privs");
 
     if (!ctx->newroot)
         FATAL("New root set for pid %d", self_pid);
