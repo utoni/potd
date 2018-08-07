@@ -109,9 +109,13 @@ static void disable_file(fs_oper op, const char *filename)
     // Resolve all symlinks
     fname = realpath(filename, NULL); /* Flawfinder: ignore */
     if (fname == NULL && errno != EACCES) {
+#if 0
         if (errno == ENOENT)
             W_STRERR("%s: realpath '%s'", __func__, filename);
         else
+#else
+        if (errno != ENOENT)
+#endif
             E_STRERR("%s: realpath '%s'", __func__, filename);
         return;
     }
