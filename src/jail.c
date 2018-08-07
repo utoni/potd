@@ -87,11 +87,13 @@ typedef struct client_event {
 
 static int jail_mainloop(event_ctx **ev_ctx, const jail_ctx *ctx[], size_t siz)
     __attribute__((noreturn));
-static int jail_accept_client(event_ctx *ev_ctx, int fd, void *user_data);
+static int jail_accept_client(event_ctx *ev_ctx, event_buf *buf,
+                              void *user_data);
 static int jail_childfn(prisoner_process *ctx)
     __attribute__((noreturn));
 static int jail_socket_tty(prisoner_process *ctx, int tty_fd);
-static int jail_socket_tty_io(event_ctx *ev_ctx, int src_fd, void *user_data);
+static int jail_socket_tty_io(event_ctx *ev_ctx, event_buf *buf,
+                              void *user_data);
 static int jail_log_input(event_ctx *ev_ctx, int src_fd, int dst_fd,
                           char *buf, size_t siz, void *user_data);
 
@@ -231,17 +233,20 @@ static int jail_mainloop(event_ctx **ev_ctx, const jail_ctx *ctx[], size_t siz)
     exit(rc);
 }
 
-static int jail_accept_client(event_ctx *ev_ctx, int fd, void *user_data)
+static int jail_accept_client(event_ctx *ev_ctx, event_buf *buf,
+                              void *user_data)
 {
     size_t i, rc = 0;
-    int s;
+    int s, fd;
     pid_t prisoner_pid;
-    server_event *ev_jail = (server_event *) user_data;
+    server_event *ev_jail;
     static prisoner_process *args;
     const jail_ctx *jail_ctx;
 
     (void) ev_ctx;
-    assert(ev_jail);
+    assert(ev_ctx && buf && user_data);
+    ev_jail = (server_event *) user_data;
+    fd = buf->fd;
 
     for (i = 0; i < ev_jail->siz; ++i) {
         jail_ctx = ev_jail->jail_ctx[i];
@@ -553,9 +558,9 @@ finish:
 }
 
 static int
-jail_socket_tty_io(event_ctx *ev_ctx, int src_fd, void *user_data)
+jail_socket_tty_io(event_ctx *ev_ctx, event_buf *buf, void *user_data)
 {
-    int dest_fd;
+    int dest_fd, src_fd = buf->fd;
     client_event *ev_cli = (client_event *) user_data;
     forward_state fwd_state;
 
