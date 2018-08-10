@@ -95,6 +95,7 @@ typedef struct ssh_login_cache {
     char user[USER_LEN];
     char pass[PASS_LEN];
     time_t last_used;
+    int deny_access;
     pthread_mutex_t cache_mtx;
 } ssh_login_cache;
 
@@ -651,7 +652,7 @@ static int authenticate(ssh_session session, ssh_login_cache *cache)
 static int auth_password(const char *user, const char *pass,
                          ssh_login_cache *cache)
 {
-    int got_auth = 0, cached = 0;
+    int got_auth = 0, deny_auth = 0, cached = 0;
     size_t i;
     double d;
     time_t o, t = time(NULL);
@@ -673,9 +674,16 @@ static int auth_password(const char *user, const char *pass,
                     continue;
                 if (!strftime(time_str, sizeof time_str, "%H:%M:%S", &tmp))
                     snprintf(time_str, sizeof time_str, "%s", "UNKNOWN_TIME");
-                N("Got cached user/pass '%s'/'%s' from %s",
-                    user, pass, time_str);
-                got_auth = 1;
+
+                if (cache[i].deny_access) {
+                    N("Got DENIED cached user/pass '%s'/'%s' from %s",
+                        user, pass, time_str);
+                    deny_auth = 1;
+                } else {
+                    N("Got cached user/pass '%s'/'%s' from %s",
+                        user, pass, time_str);
+                    got_auth = 1;
+                }
             }
 
             d = difftime(t, o);
@@ -684,39 +692,45 @@ static int auth_password(const char *user, const char *pass,
                     cache[i].user, cache[i].pass);
                 cache[i].user[0] = 0;
                 cache[i].pass[0] = 0;
+                cache[i].deny_access = 0;
             }
         }
         pthread_mutex_unlock(&cache[i].cache_mtx);
 
-        if (got_auth)
+        if (got_auth || deny_auth)
             break;
     }
 
     /* not auth'd but we have still some randomness */
-    if (!got_auth) {
+    if (!got_auth && !deny_auth) {
         srandom(time(NULL));
         d = (double)(random() % RAND_MAX);
         d /= (double)RAND_MAX;
-        if (d <= LOGIN_SUCCESS_PROB) {
-            N("Randomness won for user/pass '%s'/'%s': %.02f < %.02f",
-                user, pass, d, LOGIN_SUCCESS_PROB);
-            got_auth = 1;
 
-            for (i = 0; i < CACHE_MAX; ++i) {
-                pthread_mutex_lock(&cache[i].cache_mtx);
-                if (!cache[i].user[0] && !cache[i].pass[0]) {
-                    D("Caching user/pass '%s'/'%s'",
-                        user, pass);
-                    snprintf(cache[i].user, sizeof cache[i].user, "%s", user);
-                    snprintf(cache[i].pass, sizeof cache[i].pass, "%s", pass);
-                    cache[i].last_used = t;
-                    cached = 1;
+        for (i = 0; i < CACHE_MAX; ++i) {
+            pthread_mutex_lock(&cache[i].cache_mtx);
+            if (!cache[i].user[0] && !cache[i].pass[0]) {
+                D("Caching user/pass '%s'/'%s'",
+                    user, pass);
+                snprintf(cache[i].user, sizeof cache[i].user, "%s", user);
+                snprintf(cache[i].pass, sizeof cache[i].pass, "%s", pass);
+                cache[i].last_used = t;
+                cached = 1;
+
+                if (d <= LOGIN_SUCCESS_PROB) {
+                    N("Randomness won for user/pass '%s'/'%s': %.02f < %.02f",
+                        user, pass, d, LOGIN_SUCCESS_PROB);
+                    got_auth = 1;
+                } else {
+                    N("DENYING access for user/pass '%s'/'%s': %.02f >= %.02f",
+                        user, pass, d, LOGIN_SUCCESS_PROB);
+                    cache[i].deny_access = 1;
                 }
-                pthread_mutex_unlock(&cache[i].cache_mtx);
-
-                if (cached)
-                    break;
             }
+            pthread_mutex_unlock(&cache[i].cache_mtx);
+
+            if (cached)
+                break;
         }
     }
 
