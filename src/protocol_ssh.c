@@ -565,6 +565,11 @@ failed:
 static int authenticate(ssh_session session, ssh_login_cache *cache)
 {
     ssh_message message;
+    ssh_key pubkey;
+    int rc, auth_methods = SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_PASSWORD;
+    char *pk_hashstr;
+    unsigned char *pk_hash;
+    size_t pk_hashlen;
 
     do {
         message = ssh_message_get(session);
@@ -586,10 +591,30 @@ static int authenticate(ssh_session session, ssh_login_cache *cache)
                             ssh_message_free(message);
                             return 1;
                         }
-                        ssh_message_auth_set_methods(message,
-                            SSH_AUTH_METHOD_PASSWORD |
-                            SSH_AUTH_METHOD_INTERACTIVE);
+
+                        ssh_message_auth_set_methods(message, auth_methods);
                         /* not authenticated, send default message */
+                        ssh_message_reply_default(message);
+                        break;
+
+                    case SSH_AUTH_METHOD_PUBLICKEY:
+                        pubkey = ssh_message_auth_pubkey(message);
+                        rc = ssh_get_publickey_hash(pubkey,
+                            SSH_PUBLICKEY_HASH_SHA1, &pk_hash, &pk_hashlen);
+
+                        pk_hashstr = NULL;
+                        if (rc >= 0) {
+                            pk_hashstr = ssh_get_hexa(pk_hash, pk_hashlen);
+                        }
+
+                        if (pk_hashstr) {
+                            N("SSH: user '%s' wants to auth with public key '%s'",
+                                ssh_message_auth_user(message),
+                                pk_hashstr);
+                            ssh_string_free_char(pk_hashstr);
+                        }
+
+                        ssh_message_auth_set_methods(message, auth_methods);
                         ssh_message_reply_default(message);
                         break;
 
@@ -597,9 +622,8 @@ static int authenticate(ssh_session session, ssh_login_cache *cache)
                         N("SSH: User '%s' wants to auth with method '%d': NONE",
                             ssh_message_auth_user(message),
                             ssh_message_subtype(message));
-                        ssh_message_auth_set_methods(message,
-                            SSH_AUTH_METHOD_PASSWORD |
-                            SSH_AUTH_METHOD_INTERACTIVE);
+
+                        ssh_message_auth_set_methods(message, auth_methods);
                         ssh_message_reply_default(message);
                         break;
 
@@ -607,18 +631,15 @@ static int authenticate(ssh_session session, ssh_login_cache *cache)
                         N("SSH: User '%s' wants to auth with unknown auth '%d'",
                             ssh_message_auth_user(message),
                             ssh_message_subtype(message));
-                        ssh_message_auth_set_methods(message,
-                            SSH_AUTH_METHOD_PASSWORD |
-                            SSH_AUTH_METHOD_INTERACTIVE);
+
+                        ssh_message_auth_set_methods(message, auth_methods);
                         ssh_message_reply_default(message);
                         break;
                 }
                 break;
 
             default:
-                ssh_message_auth_set_methods(message,
-                    SSH_AUTH_METHOD_PASSWORD |
-                    SSH_AUTH_METHOD_INTERACTIVE);
+                ssh_message_auth_set_methods(message, auth_methods);
                 ssh_message_reply_default(message);
         }
         ssh_message_free(message);
