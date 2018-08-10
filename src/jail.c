@@ -306,7 +306,9 @@ static int jail_childfn(prisoner_process *ctx)
     int i, s, master_fd, slave_fd;
     int unshare_flags = CLONE_NEWUTS|CLONE_NEWPID|CLONE_NEWIPC|
         CLONE_NEWNS/*|CLONE_NEWUSER*/;
-    //unsigned int ug_map[3] = { 0, 10000, 65535 };
+#if 0
+    unsigned int ug_map[3] = { 0, 10000, 65535 };
+#endif
     pid_t self_pid, child_pid;
 #ifdef HAVE_SECCOMP
     pseccomp_ctx *psc = NULL;
@@ -410,14 +412,14 @@ static int jail_childfn(prisoner_process *ctx)
 
             fs_basic_fs();
             socket_set_ifaddr(&ctx->client_psock, "lo", "127.0.0.1", "255.0.0.0");
-/*
+#if 0
             if (update_setgroups_self(0))
                 exit(EXIT_FAILURE);
             if (update_guid_map(getpid(), ug_map, 0))
                 exit(EXIT_FAILURE);
             if (update_guid_map(getpid(), ug_map, 1))
                 exit(EXIT_FAILURE);
-*/
+#endif
             close(master_fd);
             if (login_tty(slave_fd))
                 exit(EXIT_FAILURE);
