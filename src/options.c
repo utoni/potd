@@ -352,8 +352,8 @@ static void usage(const char *arg0, int print_copyright)
     }
     fprintf(stderr,
         "For example: %s \\\n"
-        "                --redirect 0.0.0.0:2222:127.0.0.1:22222\n"
-        "                --protocol 127.0.0.1:22222:127.0.0.1:33333\n"
+        "                --redirect 0.0.0.0:2222:127.0.0.1:22222 \\\n"
+        "                --protocol 127.0.0.1:22222:127.0.0.1:33333 \\\n"
         "                --jail 127.0.0.1:33333\n"
         "  will process/filter all incoming traffic\n"
         "  at 0.0.0.0:2222 and redirect it\n"
