@@ -594,6 +594,15 @@ static int authenticate(ssh_session session, ssh_login_cache *cache)
                         break;
 
                     case SSH_AUTH_METHOD_NONE:
+                        N("SSH: User '%s' wants to auth with method '%d': NONE",
+                            ssh_message_auth_user(message),
+                            ssh_message_subtype(message));
+                        ssh_message_auth_set_methods(message,
+                            SSH_AUTH_METHOD_PASSWORD |
+                            SSH_AUTH_METHOD_INTERACTIVE);
+                        ssh_message_reply_default(message);
+                        break;
+
                     default:
                         N("SSH: User '%s' wants to auth with unknown auth '%d'",
                             ssh_message_auth_user(message),
