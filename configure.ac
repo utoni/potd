@@ -1,5 +1,7 @@
 AC_PREREQ([2.69])
-AC_INIT(potd, 1.0, matzeton@googlemail.com)
+AC_INIT([potd],
+        [m4_esyscmd([build-aux/git-version-gen])],
+        [matzeton@googlemail.com])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
