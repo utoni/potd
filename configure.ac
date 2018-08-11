@@ -160,6 +160,8 @@ AC_CHECK_LIB([pthread], [pthread_create])
 dnl libssh-dev
 PKG_CHECK_MODULES([libssh], [libssh >= 0.7.3], [],
       [ AC_MSG_ERROR([pkg-config: libssh >= 0.7.3 not found]) ])
+saved_CFLAGS="$CFLAGS"
+saved_LIBS="$LIBS"
 CFLAGS="$CFLAGS $libssh_CFLAGS"
 LIBS="$LIBS $libssh_LIBS"
 dnl Some libssh versions require libssl,libcrypto,zlib,libdl.
@@ -167,6 +169,8 @@ AC_MSG_CHECKING([if libssh requires -lcrypto])
 AC_TRY_LINK([#include <libssh/libssh.h>],
       [ return ssh_init(); ], [ libssh_require_libcrypto="no" ],
                               [ libssh_require_libcrypto="yes"])
+CFLAGS="$saved_CFLAGS"
+LIBS="$saved_LIBS"
 
 AC_MSG_RESULT([${libssh_require_libcrypto}])
 AS_IF([test "x${libssh_require_libcrypto}" = xyes],
@@ -267,6 +271,9 @@ AS_IF([test "x${libssh_require_gssapi}" = xyes],
         CFLAGS="$saved_CFLAGS $gssapi_CFLAGS"
         LIBS="$saved_LIBS $gssapi_LIBS"
       ])
+
+CFLAGS="$libssh_CFLAGS $CFLAGS"
+LIBS="$libssh_LIBS $LIBS"
 
 dnl libseccomp-dev
 PKG_CHECK_MODULES([libseccomp], [libseccomp >= 2.2.1],
