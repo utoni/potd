@@ -161,7 +161,7 @@ int jail_setup_event(jail_ctx *ctx[], size_t siz, event_ctx **ev_ctx)
         return 1;
 
     for (size_t i = 0; i < siz; ++i) {
-        if (event_add_sock(*ev_ctx, &ctx[i]->fwd_ctx.sock)) {
+        if (event_add_sock(*ev_ctx, &ctx[i]->fwd_ctx.sock, NULL)) {
             return 1;
         }
 
@@ -521,12 +521,12 @@ static int jail_socket_tty(prisoner_process *ctx, int tty_fd)
             ctx->host_buf, ctx->service_buf, ctx->client_psock.fd);
         goto finish;
     }
-    if (event_add_sock(ev_ctx, &ctx->client_psock)) {
+    if (event_add_sock(ev_ctx, &ctx->client_psock, NULL)) {
         E_STRERR("Jail event context for socket %s:%s",
             ctx->host_buf, ctx->service_buf);
         goto finish;
     }
-    if (event_add_fd(ev_ctx, tty_fd)) {
+    if (event_add_fd(ev_ctx, tty_fd, NULL)) {
         E_STRERR("Jail event context for tty fd %d",
             tty_fd);
         goto finish;
@@ -544,7 +544,7 @@ static int jail_socket_tty(prisoner_process *ctx, int tty_fd)
         E_STRERR("%s", "SIGNAL fd");
         goto finish;
     }
-    if (event_add_fd(ev_ctx, ev_cli.signal_fd)) {
+    if (event_add_fd(ev_ctx, ev_cli.signal_fd, NULL)) {
         E_STRERR("Jail SIGNAL fd %d", ev_cli.signal_fd);
         goto finish;
     }

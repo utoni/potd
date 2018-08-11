@@ -140,7 +140,7 @@ add_eventbuf(event_ctx *ctx)
     return &ctx->buffer_array[ctx->buffer_used - 1];
 }
 
-int event_add_sock(event_ctx *ctx, psocket *sock)
+int event_add_sock(event_ctx *ctx, psocket *sock, void *buf_user_data)
 {
     int s;
     struct epoll_event ev = {0,{0}};
@@ -150,6 +150,7 @@ int event_add_sock(event_ctx *ctx, psocket *sock)
 
     eb = add_eventbuf(ctx);
     eb->fd = sock->fd;
+    eb->buf_user_data = buf_user_data;
     assert(eb->buf_used == 0);
 
     ev.data.ptr = eb;
@@ -161,7 +162,7 @@ int event_add_sock(event_ctx *ctx, psocket *sock)
     return 0;
 }
 
-int event_add_fd(event_ctx *ctx, int fd)
+int event_add_fd(event_ctx *ctx, int fd, void *buf_user_data)
 {
     int s;
     struct epoll_event ev = {0,{0}};
@@ -171,6 +172,7 @@ int event_add_fd(event_ctx *ctx, int fd)
 
     eb = add_eventbuf(ctx);
     eb->fd = fd;
+    eb->buf_user_data = buf_user_data;
     assert(eb->buf_used == 0);
 
     ev.data.ptr = eb;

@@ -177,7 +177,7 @@ int redirector_setup_event(redirector_ctx *rdr_ctx[], size_t siz, event_ctx **ev
         return 1;
 
     for (size_t i = 0; i < siz; ++i) {
-        if (event_add_sock(*ev_ctx, &rdr_ctx[i]->sock)) {
+        if (event_add_sock(*ev_ctx, &rdr_ctx[i]->sock, NULL)) {
             return 1;
         }
 
@@ -412,7 +412,7 @@ client_mainloop(void *arg)
         args->rdr_ctx->fwd_ctx.host_buf,
         args->rdr_ctx->fwd_ctx.service_buf, fwd.fd);
 
-    if (event_add_sock(ev_ctx, &fwd)) {
+    if (event_add_sock(ev_ctx, &fwd, NULL)) {
         E_STRERR("Forward event context add to %s:%s forward fd %d",
             args->rdr_ctx->fwd_ctx.host_buf,
             args->rdr_ctx->fwd_ctx.service_buf, fwd.fd);
@@ -430,7 +430,7 @@ client_mainloop(void *arg)
             args->rdr_ctx->fwd_ctx.service_buf, fwd.fd);
         goto finish;
     }
-    if (event_add_sock(ev_ctx, &args->client_sock)) {
+    if (event_add_sock(ev_ctx, &args->client_sock, NULL)) {
         E_STRERR("Forward event context add to %s:%s forward fd %d",
 	        args->rdr_ctx->fwd_ctx.host_buf,
             args->rdr_ctx->fwd_ctx.service_buf, fwd.fd);

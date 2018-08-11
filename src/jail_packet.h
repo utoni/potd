@@ -1,5 +1,5 @@
 /*
- * pevent.h
+ * jail_packet.h
  * potd is licensed under the BSD license:
  *
  * Copyright (c) 2018 Toni Uhlig <matzeton@googlemail.com>
@@ -31,67 +31,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef POTD_EVENT_H
-#define POTD_EVENT_H 1
+#ifndef POTD_JAIL_PACKET_H
+#define POTD_JAIL_PACKET_H 1
 
-#include <stdio.h>
-#include <sys/epoll.h>
+#include <stdint.h>
 
-#include "socket.h"
+#include "pevent.h"
 
-#define POTD_MAXFD 32
-#define POTD_MAXEVENTS 64
-#define POTD_EVENTBUF_REALLOCSIZ 5
+#define PKT_INVALID 0x0
+#define PKT_HELLO   0x1
 
-typedef enum forward_state {
-    CON_OK, CON_IN_TERMINATED, CON_OUT_TERMINATED,
-    CON_IN_ERROR, CON_OUT_ERROR
-} forward_state;
+typedef enum jail_packet_state {
+    JP_NONE, JP_INVALID, JP_HELLO
+} jail_packet_state;
 
-typedef struct event_buf {
-    int fd;
-
-    char buf[BUFSIZ];
-    size_t buf_used;
-
-    void *buf_user_data;
-} event_buf;
-
-typedef struct event_ctx {
-    int active;
-    int has_error;
-
-    int epoll_fd;
-    struct epoll_event events[POTD_MAXEVENTS];
-    int current_event;
-
-    event_buf *buffer_array;
-    size_t buffer_size;
-    size_t buffer_used;
-} event_ctx;
-
-typedef int (*on_event_cb) (event_ctx *ev_ctx, event_buf *buf,
-                            void *user_data);
-typedef int (*on_data_cb) (event_ctx *ev_ctx, int src_fd, int dst_fd,
-                           char *buf, size_t siz, void *user_data);
+typedef struct jail_packet_ctx {
+    jail_packet_state pstate;
+} jail_packet_ctx;
 
 
-void event_init(event_ctx **ctx);
-
-void event_free(event_ctx **ctx);
-
-int event_setup(event_ctx *ctx);
-
-int event_validate_ctx(event_ctx *ctx);
-
-int event_add_sock(event_ctx *ctx, psocket *sock, void *buf_user_data);
-
-int event_add_fd(event_ctx *ctx, int fd, void *buf_user_data);
-
-int event_loop(event_ctx *ctx, on_event_cb on_event, void *user_data);
-
-forward_state
-event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
-                         void *user_data);
+int jail_packet_loop(event_ctx *ctx, jail_packet_ctx *pkt_ctx,
+                     on_data_cb on_data);
 
 #endif
