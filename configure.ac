@@ -217,8 +217,8 @@ AC_MSG_RESULT([${libssh_require_libssl}])
 AS_IF([test "x${libssh_require_libssl}" = xyes],
       [ saved_CFLAGS="$CFLAGS"
         saved_LIBS="$LIBS"
-        PKG_CHECK_MODULES([libssl], [libssl >= 1.0.2l], [],
-            [ AC_MSG_ERROR([pkg-config: libssl >= 1.0.2l not found]) ])
+        PKG_CHECK_MODULES([libssl], [libssl >= 1.0.1f], [],
+            [ AC_MSG_ERROR([pkg-config: libssl >= 1.0.1f not found]) ])
         CFLAGS="$saved_CFLAGS $libssl_CFLAGS"
         LIBS="$saved_LIBS $libssl_LIBS"
         AC_CHECK_LIB([ssl], [SSL_new], [ libssl_require_libdl="no" ],
