@@ -29,11 +29,8 @@ case ${host_os} in
         ;;
 esac
 
-AC_CHECK_TOOL([PKGCONFIG], [${ac_cv_host}-pkg-config], [no])
-AS_IF([test "x${PKGCONFIG}" = xno],
-      [ PKGCONFIG=''
-        AC_CHECK_TOOL([PKGCONFIG], [pkg-config], [no]) ])
-AS_IF([test "x${PKGCONFIG}" = xno], [ AC_MSG_ERROR([pkg-config not found]) ])
+AC_CHECK_TOOL([PKGCONFIG], [pkg-config], [:])
+AS_IF([test "x${PKGCONFIG}" = x], [ AC_MSG_ERROR([pkg-config not found]) ])
 
 dnl check for -std=gnu99
 CFLAGS="-pedantic -Wall -std=gnu99 -D_GNU_SOURCE=1 $CFLAGS"
