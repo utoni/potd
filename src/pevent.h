@@ -40,11 +40,19 @@
 
 #define POTD_MAXFD 32
 #define POTD_MAXEVENTS 64
+#define POTD_EVENTBUF_REALLOCSIZ 5
 
 typedef enum forward_state {
     CON_OK, CON_IN_TERMINATED, CON_OUT_TERMINATED,
     CON_IN_ERROR, CON_OUT_ERROR
 } forward_state;
+
+typedef struct event_buf {
+    int fd;
+
+    char buf[BUFSIZ];
+    size_t buf_used;
+} event_buf;
 
 typedef struct event_ctx {
     int active;
@@ -53,9 +61,14 @@ typedef struct event_ctx {
     int epoll_fd;
     struct epoll_event events[POTD_MAXEVENTS];
     int current_event;
+
+    event_buf *buffer_array;
+    size_t buffer_size;
+    size_t buffer_used;
 } event_ctx;
 
-typedef int (*on_event_cb) (event_ctx *ev_ctx, int fd, void *user_data);
+typedef int (*on_event_cb) (event_ctx *ev_ctx, event_buf *buf,
+                            void *user_data);
 typedef int (*on_data_cb) (event_ctx *ev_ctx, int src_fd, int dst_fd,
                            char *buf, size_t siz, void *user_data);
 
@@ -65,6 +78,8 @@ void event_init(event_ctx **ctx);
 void event_free(event_ctx **ctx);
 
 int event_setup(event_ctx *ctx);
+
+int event_validate_ctx(event_ctx *ctx);
 
 int event_add_sock(event_ctx *ctx, psocket *sock);
 

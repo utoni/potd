@@ -42,6 +42,9 @@
 #include <pty.h>
 #include <utmp.h>
 #include <limits.h>
+#ifdef HAVE_SECUREBITS_AMBIENT
+#include <linux/securebits.h>
+#endif
 #include <sys/signalfd.h>
 #include <sys/wait.h>
 #include <sys/prctl.h>
@@ -84,11 +87,13 @@ typedef struct client_event {
 
 static int jail_mainloop(event_ctx **ev_ctx, const jail_ctx *ctx[], size_t siz)
     __attribute__((noreturn));
-static int jail_accept_client(event_ctx *ev_ctx, int fd, void *user_data);
+static int jail_accept_client(event_ctx *ev_ctx, event_buf *buf,
+                              void *user_data);
 static int jail_childfn(prisoner_process *ctx)
     __attribute__((noreturn));
 static int jail_socket_tty(prisoner_process *ctx, int tty_fd);
-static int jail_socket_tty_io(event_ctx *ev_ctx, int src_fd, void *user_data);
+static int jail_socket_tty_io(event_ctx *ev_ctx, event_buf *buf,
+                              void *user_data);
 static int jail_log_input(event_ctx *ev_ctx, int src_fd, int dst_fd,
                           char *buf, size_t siz, void *user_data);
 
@@ -228,17 +233,20 @@ static int jail_mainloop(event_ctx **ev_ctx, const jail_ctx *ctx[], size_t siz)
     exit(rc);
 }
 
-static int jail_accept_client(event_ctx *ev_ctx, int fd, void *user_data)
+static int jail_accept_client(event_ctx *ev_ctx, event_buf *buf,
+                              void *user_data)
 {
     size_t i, rc = 0;
-    int s;
+    int s, fd;
     pid_t prisoner_pid;
-    server_event *ev_jail = (server_event *) user_data;
+    server_event *ev_jail;
     static prisoner_process *args;
     const jail_ctx *jail_ctx;
 
     (void) ev_ctx;
-    assert(ev_jail);
+    assert(ev_ctx && buf && user_data);
+    ev_jail = (server_event *) user_data;
+    fd = buf->fd;
 
     for (i = 0; i < ev_jail->siz; ++i) {
         jail_ctx = ev_jail->jail_ctx[i];
@@ -298,7 +306,9 @@ static int jail_childfn(prisoner_process *ctx)
     int i, s, master_fd, slave_fd;
     int unshare_flags = CLONE_NEWUTS|CLONE_NEWPID|CLONE_NEWIPC|
         CLONE_NEWNS/*|CLONE_NEWUSER*/;
-    //unsigned int ug_map[3] = { 0, 10000, 65535 };
+#if 0
+    unsigned int ug_map[3] = { 0, 10000, 65535 };
+#endif
     pid_t self_pid, child_pid;
 #ifdef HAVE_SECCOMP
     pseccomp_ctx *psc = NULL;
@@ -308,7 +318,15 @@ static int jail_childfn(prisoner_process *ctx)
     self_pid = getpid();
     set_procname("[potd] jail-client");
     if (prctl(PR_SET_PDEATHSIG, SIGTERM) != 0)
-        FATAL("Jail child prctl for pid %d", self_pid);
+        FATAL("%s", "Jail child setting deathsig");
+#ifdef HAVE_SECUREBITS_AMBIENT
+    if (prctl(PR_SET_SECUREBITS,
+              SECBIT_NOROOT | SECBIT_NOROOT_LOCKED |
+              SECBIT_NO_CAP_AMBIENT_RAISE | SECBIT_NO_CAP_AMBIENT_RAISE_LOCKED))
+        FATAL("%s", "Jail child setting securebits");
+#endif
+    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0))
+        FATAL("%s", "Jail child setting no new privs");
 
     if (!ctx->newroot)
         FATAL("New root set for pid %d", self_pid);
@@ -394,14 +412,14 @@ static int jail_childfn(prisoner_process *ctx)
 
             fs_basic_fs();
             socket_set_ifaddr(&ctx->client_psock, "lo", "127.0.0.1", "255.0.0.0");
-/*
+#if 0
             if (update_setgroups_self(0))
                 exit(EXIT_FAILURE);
             if (update_guid_map(getpid(), ug_map, 0))
                 exit(EXIT_FAILURE);
             if (update_guid_map(getpid(), ug_map, 1))
                 exit(EXIT_FAILURE);
-*/
+#endif
             close(master_fd);
             if (login_tty(slave_fd))
                 exit(EXIT_FAILURE);
@@ -446,6 +464,7 @@ static int jail_childfn(prisoner_process *ctx)
 
             if (sethostname("openwrt", SIZEOF("openwrt")))
                 exit(EXIT_FAILURE);
+            /* Flawfinder: ignore */
             if (execl(path_shell, path_shell, (char *) NULL))
                 exit(EXIT_FAILURE);
             break;
@@ -541,9 +560,9 @@ finish:
 }
 
 static int
-jail_socket_tty_io(event_ctx *ev_ctx, int src_fd, void *user_data)
+jail_socket_tty_io(event_ctx *ev_ctx, event_buf *buf, void *user_data)
 {
-    int dest_fd;
+    int dest_fd, src_fd = buf->fd;
     client_event *ev_cli = (client_event *) user_data;
     forward_state fwd_state;
 

@@ -43,6 +43,8 @@
 #include "log.h"
 
 static int epoll_event_string(uint32_t event, char *buf, size_t siz);
+static struct event_buf *
+add_eventbuf(event_ctx *ctx);
 
 
 static int epoll_event_string(uint32_t event, char *buf, size_t siz)
@@ -73,9 +75,19 @@ void event_init(event_ctx **ctx)
 
 void event_free(event_ctx **ctx)
 {
+    size_t i, max;
+
     assert(ctx && *ctx);
 
     close((*ctx)->epoll_fd);
+
+    if ((*ctx)->buffer_array) {
+        max = (*ctx)->buffer_used;
+        for (i = 0; i < max; ++i) {
+            close((*ctx)->buffer_array[i].fd);
+        }
+        free((*ctx)->buffer_array);
+    }
     free((*ctx));
     *ctx = NULL;
 }
@@ -91,14 +103,56 @@ int event_setup(event_ctx *ctx)
     return ctx->epoll_fd < 0;
 }
 
+int event_validate_ctx(event_ctx *ctx)
+{
+    assert(ctx);
+    assert(ctx->active != ctx->has_error);
+    assert(ctx->epoll_fd >= 0);
+    assert(ctx->buffer_size > ctx->buffer_used);
+
+    return 0;
+}
+
+static struct event_buf *
+add_eventbuf(event_ctx *ctx)
+{
+    size_t i, siz = ctx->buffer_size;
+
+    if (siz < ctx->buffer_used + 1) {
+        siz += POTD_EVENTBUF_REALLOCSIZ;
+
+        ctx->buffer_array = realloc(ctx->buffer_array,
+            sizeof(*ctx->buffer_array) * siz);
+        assert(ctx->buffer_array);
+
+        memset(ctx->buffer_array +
+            sizeof(*ctx->buffer_array) * ctx->buffer_used, 0,
+            sizeof(*ctx->buffer_array) * (siz - ctx->buffer_used));
+
+        for (i = ctx->buffer_used; i < ctx->buffer_size; ++i) {
+            ctx->buffer_array[i].fd = -1;
+        }
+
+        ctx->buffer_size = siz;
+    }
+
+    ctx->buffer_used++;
+    return &ctx->buffer_array[ctx->buffer_used - 1];
+}
+
 int event_add_sock(event_ctx *ctx, psocket *sock)
 {
     int s;
     struct epoll_event ev = {0,{0}};
+    struct event_buf *eb;
 
     assert(ctx && sock);
 
-    ev.data.fd = sock->fd;
+    eb = add_eventbuf(ctx);
+    eb->fd = sock->fd;
+    assert(eb->buf_used == 0);
+
+    ev.data.ptr = eb;
     ev.events = EPOLLIN /*| EPOLLET*/; /* EPOLLET: broken */
     s = epoll_ctl(ctx->epoll_fd, EPOLL_CTL_ADD, sock->fd, &ev);
     if (s)
@@ -111,10 +165,15 @@ int event_add_fd(event_ctx *ctx, int fd)
 {
     int s;
     struct epoll_event ev = {0,{0}};
+    struct event_buf *eb;
 
     assert(ctx);
 
-    ev.data.fd = fd;
+    eb = add_eventbuf(ctx);
+    eb->fd = fd;
+    assert(eb->buf_used == 0);
+
+    ev.data.ptr = eb;
     ev.events = EPOLLIN | EPOLLET;
     s = epoll_ctl(ctx->epoll_fd, EPOLL_CTL_ADD, fd, &ev);
     if (s)
@@ -128,6 +187,7 @@ int event_loop(event_ctx *ctx, on_event_cb on_event, void *user_data)
     int n, i, saved_errno;
     char ev_err[16];
     sigset_t eset;
+    event_buf *buf;
 
     assert(ctx && on_event);
     sigemptyset(&eset);
@@ -147,6 +207,7 @@ int event_loop(event_ctx *ctx, on_event_cb on_event, void *user_data)
 
         for (i = 0; i < n; ++i) {
             ctx->current_event = i;
+            buf = (event_buf *) ctx->events[i].data.ptr;
 
             if ((ctx->events[i].events & EPOLLERR) ||
                 (ctx->events[i].events & EPOLLHUP) ||
@@ -155,19 +216,17 @@ int event_loop(event_ctx *ctx, on_event_cb on_event, void *user_data)
             {
                 if (epoll_event_string(ctx->events[i].events, ev_err, sizeof ev_err)) {
                     errno = saved_errno;
-                    E_STRERR("Event for descriptor %d",
-                        ctx->events[i].data.fd);
+                    E_STRERR("Event for descriptor %d", buf->fd);
                 } else {
                     errno = saved_errno;
-                    E_STRERR("Event [%s] for descriptor %d",
-                        ev_err, ctx->events[i].data.fd);
+                    E_STRERR("Event [%s] for descriptor %d", ev_err, buf->fd);
                 }
 
                 ctx->has_error = 1;
             } else {
-                if (!on_event(ctx, ctx->events[i].data.fd, user_data) && !ctx->has_error)
+                if (!on_event(ctx, ctx->events[i].data.ptr, user_data) && !ctx->has_error)
                     W2("Event callback failed: [fd: %d , npoll: %d]",
-                        ctx->events[i].data.fd, n);
+                        buf->fd, n);
             }
 
             if (!ctx->active || ctx->has_error)
@@ -183,26 +242,25 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
                          void *user_data)
 {
     int data_avail = 1;
-    int has_input;
     int saved_errno;
     forward_state rc = CON_OK;
     ssize_t siz;
-    char buf[BUFSIZ];
     struct epoll_event *ev;
+    struct event_buf *ev_buf;
 
     assert(ctx->current_event >= 0 &&
         ctx->current_event < POTD_MAXEVENTS);
     ev = &ctx->events[ctx->current_event];
+    ev_buf = (event_buf *) ev->data.ptr;
 
     while (data_avail) {
-        has_input = 0;
         saved_errno = 0;
         siz = -1;
 
         if (ev->events & EPOLLIN) {
-            has_input = 1;
             errno = 0;
-            siz = read(ev->data.fd, &buf[0], BUFSIZ);
+            ev_buf->buf_used = 0;
+            siz = read(ev_buf->fd, ev_buf->buf, sizeof(ev_buf->buf));
             saved_errno = errno;
         } else break;
         if (saved_errno == EAGAIN)
@@ -210,7 +268,7 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
 
         switch (siz) {
             case -1:
-                E_STRERR("Client read from fd %d", ev->data.fd);
+                E_STRERR("Client read from fd %d", ev_buf->fd);
                 ctx->has_error = 1;
                 rc = CON_IN_ERROR;
                 break;
@@ -218,7 +276,8 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
                 rc = CON_IN_TERMINATED;
                 break;
             default:
-                D2("Read %zu bytes from fd %d", siz, ev->data.fd);
+                D2("Read %zu bytes from fd %d", siz, ev_buf->fd);
+                ev_buf->buf_used = siz;
                 break;
         }
 
@@ -226,30 +285,29 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
             break;
 
         if (on_data &&
-            on_data(ctx, ev->data.fd, dest_fd, buf, siz, user_data))
+            on_data(ctx, ev_buf->fd, dest_fd, ev_buf->buf, ev_buf->buf_used,
+                    user_data))
         {
             W2("On data callback failed, not forwarding from %d to %d",
-                ev->data.fd, dest_fd);
+                ev_buf->fd, dest_fd);
             continue;
         }
 
-        if (has_input) {
-            errno = 0;
-            siz = write(dest_fd, &buf[0], siz);
+        errno = 0;
+        siz = write(dest_fd, ev_buf->buf, ev_buf->buf_used);
 
-            switch (siz) {
-                case -1:
-                    ctx->has_error = 1;
-                    rc = CON_OUT_ERROR;
-                    break;
-                case 0:
-                    rc = CON_OUT_TERMINATED;
-                    break;
-                default:
-                    D2("Written %zu bytes from fd %d to fd %d",
-                        siz, ev->data.fd, dest_fd);
-                    break;
-            }
+        switch (siz) {
+            case -1:
+                ctx->has_error = 1;
+                rc = CON_OUT_ERROR;
+                break;
+            case 0:
+                rc = CON_OUT_TERMINATED;
+                break;
+            default:
+                D2("Written %zu bytes from fd %d to fd %d",
+                    siz, ev_buf->fd, dest_fd);
+                break;
         }
 
         if (rc != CON_OK)
@@ -258,7 +316,7 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
 
     D2("Connection state: %d", rc);
     if (rc != CON_OK) {
-        shutdown(ev->data.fd, SHUT_RDWR);
+        shutdown(ev_buf->fd, SHUT_RDWR);
         shutdown(dest_fd, SHUT_RDWR);
     }
     return rc;

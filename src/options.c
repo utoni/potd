@@ -156,13 +156,13 @@ static int parse_path(opt_ptr *d, char *some_path)
     char path[PATH_MAX] = {0};
     char *dir, *base;
 
-    d->str_dup = realpath(some_path, NULL);
+    d->str_dup = realpath(some_path, NULL); /* Flawfinder: ignore */
     if (!d->str_dup && errno == ENOENT) {
         snprintf(path_dir, sizeof path_dir, "%s", some_path);
         dir = dirname(path_dir);
         if (!dir)
             return 1;
-        dir = realpath(dir, NULL);
+        dir = realpath(dir, NULL); /* Flawfinder: ignore */
         if (!dir)
             return 1;
 
@@ -352,8 +352,8 @@ static void usage(const char *arg0, int print_copyright)
     }
     fprintf(stderr,
         "For example: %s \\\n"
-        "                --redirect 0.0.0.0:2222:127.0.0.1:22222\n"
-        "                --protocol 127.0.0.1:22222:127.0.0.1:33333\n"
+        "                --redirect 0.0.0.0:2222:127.0.0.1:22222 \\\n"
+        "                --protocol 127.0.0.1:22222:127.0.0.1:33333 \\\n"
         "                --jail 127.0.0.1:33333\n"
         "  will process/filter all incoming traffic\n"
         "  at 0.0.0.0:2222 and redirect it\n"

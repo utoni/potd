@@ -95,6 +95,7 @@ typedef struct ssh_login_cache {
     char user[USER_LEN];
     char pass[PASS_LEN];
     time_t last_used;
+    int deny_access;
     pthread_mutex_t cache_mtx;
 } ssh_login_cache;
 
@@ -565,6 +566,11 @@ failed:
 static int authenticate(ssh_session session, ssh_login_cache *cache)
 {
     ssh_message message;
+    ssh_key pubkey;
+    int rc, auth_methods = SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_PASSWORD;
+    char *pk_hashstr;
+    unsigned char *pk_hash;
+    size_t pk_hashlen;
 
     do {
         message = ssh_message_get(session);
@@ -586,30 +592,55 @@ static int authenticate(ssh_session session, ssh_login_cache *cache)
                             ssh_message_free(message);
                             return 1;
                         }
-                        ssh_message_auth_set_methods(message,
-                            SSH_AUTH_METHOD_PASSWORD |
-                            SSH_AUTH_METHOD_INTERACTIVE);
+
+                        ssh_message_auth_set_methods(message, auth_methods);
                         /* not authenticated, send default message */
                         ssh_message_reply_default(message);
                         break;
 
+                    case SSH_AUTH_METHOD_PUBLICKEY:
+                        pubkey = ssh_message_auth_pubkey(message);
+                        rc = ssh_get_publickey_hash(pubkey,
+                            SSH_PUBLICKEY_HASH_SHA1, &pk_hash, &pk_hashlen);
+
+                        pk_hashstr = NULL;
+                        if (rc >= 0) {
+                            pk_hashstr = ssh_get_hexa(pk_hash, pk_hashlen);
+                        }
+
+                        if (pk_hashstr) {
+                            N("SSH: user '%s' wants to auth with public key '%s'",
+                                ssh_message_auth_user(message),
+                                pk_hashstr);
+                            ssh_string_free_char(pk_hashstr);
+                        }
+
+                        ssh_message_auth_set_methods(message, auth_methods);
+                        ssh_message_reply_default(message);
+                        break;
+
                     case SSH_AUTH_METHOD_NONE:
+                        N("SSH: User '%s' wants to auth with method '%d': NONE",
+                            ssh_message_auth_user(message),
+                            ssh_message_subtype(message));
+
+                        ssh_message_auth_set_methods(message, auth_methods);
+                        ssh_message_reply_default(message);
+                        break;
+
                     default:
                         N("SSH: User '%s' wants to auth with unknown auth '%d'",
                             ssh_message_auth_user(message),
                             ssh_message_subtype(message));
-                        ssh_message_auth_set_methods(message,
-                            SSH_AUTH_METHOD_PASSWORD |
-                            SSH_AUTH_METHOD_INTERACTIVE);
+
+                        ssh_message_auth_set_methods(message, auth_methods);
                         ssh_message_reply_default(message);
                         break;
                 }
                 break;
 
             default:
-                ssh_message_auth_set_methods(message,
-                    SSH_AUTH_METHOD_PASSWORD |
-                    SSH_AUTH_METHOD_INTERACTIVE);
+                ssh_message_auth_set_methods(message, auth_methods);
                 ssh_message_reply_default(message);
         }
         ssh_message_free(message);
@@ -621,7 +652,7 @@ static int authenticate(ssh_session session, ssh_login_cache *cache)
 static int auth_password(const char *user, const char *pass,
                          ssh_login_cache *cache)
 {
-    int got_auth = 0, cached = 0;
+    int got_auth = 0, deny_auth = 0, cached = 0;
     size_t i;
     double d;
     time_t o, t = time(NULL);
@@ -643,9 +674,16 @@ static int auth_password(const char *user, const char *pass,
                     continue;
                 if (!strftime(time_str, sizeof time_str, "%H:%M:%S", &tmp))
                     snprintf(time_str, sizeof time_str, "%s", "UNKNOWN_TIME");
-                N("Got cached user/pass '%s'/'%s' from %s",
-                    user, pass, time_str);
-                got_auth = 1;
+
+                if (cache[i].deny_access) {
+                    N("Got DENIED cached user/pass '%s'/'%s' from %s",
+                        user, pass, time_str);
+                    deny_auth = 1;
+                } else {
+                    N("Got cached user/pass '%s'/'%s' from %s",
+                        user, pass, time_str);
+                    got_auth = 1;
+                }
             }
 
             d = difftime(t, o);
@@ -654,39 +692,45 @@ static int auth_password(const char *user, const char *pass,
                     cache[i].user, cache[i].pass);
                 cache[i].user[0] = 0;
                 cache[i].pass[0] = 0;
+                cache[i].deny_access = 0;
             }
         }
         pthread_mutex_unlock(&cache[i].cache_mtx);
 
-        if (got_auth)
+        if (got_auth || deny_auth)
             break;
     }
 
     /* not auth'd but we have still some randomness */
-    if (!got_auth) {
+    if (!got_auth && !deny_auth) {
         srandom(time(NULL));
         d = (double)(random() % RAND_MAX);
         d /= (double)RAND_MAX;
-        if (d <= LOGIN_SUCCESS_PROB) {
-            N("Randomness won for user/pass '%s'/'%s': %.02f < %.02f",
-                user, pass, d, LOGIN_SUCCESS_PROB);
-            got_auth = 1;
 
-            for (i = 0; i < CACHE_MAX; ++i) {
-                pthread_mutex_lock(&cache[i].cache_mtx);
-                if (!cache[i].user[0] && !cache[i].pass[0]) {
-                    D("Caching user/pass '%s'/'%s'",
-                        user, pass);
-                    snprintf(cache[i].user, sizeof cache[i].user, "%s", user);
-                    snprintf(cache[i].pass, sizeof cache[i].pass, "%s", pass);
-                    cache[i].last_used = t;
-                    cached = 1;
+        for (i = 0; i < CACHE_MAX; ++i) {
+            pthread_mutex_lock(&cache[i].cache_mtx);
+            if (!cache[i].user[0] && !cache[i].pass[0]) {
+                D("Caching user/pass '%s'/'%s'",
+                    user, pass);
+                snprintf(cache[i].user, sizeof cache[i].user, "%s", user);
+                snprintf(cache[i].pass, sizeof cache[i].pass, "%s", pass);
+                cache[i].last_used = t;
+                cached = 1;
+
+                if (d <= LOGIN_SUCCESS_PROB) {
+                    N("Randomness won for user/pass '%s'/'%s': %.02f < %.02f",
+                        user, pass, d, LOGIN_SUCCESS_PROB);
+                    got_auth = 1;
+                } else {
+                    N("DENYING access for user/pass '%s'/'%s': %.02f >= %.02f",
+                        user, pass, d, LOGIN_SUCCESS_PROB);
+                    cache[i].deny_access = 1;
                 }
-                pthread_mutex_unlock(&cache[i].cache_mtx);
-
-                if (cached)
-                    break;
             }
+            pthread_mutex_unlock(&cache[i].cache_mtx);
+
+            if (cached)
+                break;
         }
     }
 
