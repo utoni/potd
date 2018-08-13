@@ -9,3 +9,6 @@ if ! autoreconf -fi; then
     autoconf
     automake --foreign --add-missing --force-missing --copy
 fi
+
+set +x
+printf "\n%s\n" "You can now run \`./configure\` and \`make\`."
