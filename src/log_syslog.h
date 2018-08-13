@@ -1,5 +1,5 @@
 /*
- * options.h
+ * log_syslog.h
  * potd is licensed under the BSD license:
  *
  * Copyright (c) 2018 Toni Uhlig <matzeton@googlemail.com>
@@ -31,42 +31,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef POTD_OPTIONS_H
-#define POTD_OPTIONS_H 1
+#ifndef POTD_LOG_SYSLOG_H
+#define POTD_LOG_SYSLOG_H 1
 
-struct opt_list;
+#include "log.h"
 
-typedef enum opt_name {
-    OPT_LOGTOSYSLOG = 0, OPT_LOGTOFILE, OPT_LOGFILE, OPT_LOGLEVEL,
-    OPT_DAEMON,
-    OPT_REDIRECT,
-    OPT_PROTOCOL,
-    OPT_JAIL,
-    OPT_ROOT,
-    OPT_RODIR,
-    OPT_ROFILE,
-    OPT_NETNS_RUN_DIR,
-    OPT_SSH_RUN_DIR,
-    OPT_CHUSER,
-    OPT_CHGROUP,
-    OPT_SECCOMP_MINIMAL,
-    OPT_RUNTEST,
-
-    OPT_HELP,
-    OPT_MAX
-} opt_name;
-
-typedef int check_opt;
+#define LOG_SYSLOG_FUNCS log_open_syslog, log_close_syslog, \
+    log_fmt_syslog, log_fmtex_syslog, log_fmtexerr_syslog
 
 
-int parse_cmdline(int argc, char **argv);
+int log_open_syslog(void);
 
-int getopt_used(opt_name on);
+void log_close_syslog(void);
 
-char *
-getopt_str(opt_name on);
+void log_fmt_syslog(log_priority prio, const char *fmt, ...);
 
-char *
-getopt_strlist(opt_name on, struct opt_list **ol);
+void log_fmtex_syslog(log_priority prio, const char *srcfile,
+                      size_t line, const char *fmt, ...);
+
+void log_fmtexerr_syslog(log_priority prio, const char *srcfile,
+                         size_t line, const char *fmt, ...);
 
 #endif

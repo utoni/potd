@@ -47,6 +47,7 @@
 #include "log.h"
 #include "log_colored.h"
 #include "log_file.h"
+#include "log_syslog.h"
 #include "options.h"
 #include "utils.h"
 #include "redirector.h"
@@ -338,7 +339,10 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    if (getopt_used(OPT_LOGTOFILE) || getopt_used(OPT_LOGFILE)) {
+    if (getopt_used(OPT_LOGTOSYSLOG)) {
+        LOG_SET_FUNCS_VA(LOG_SYSLOG_FUNCS);
+        fprintf(stderr, "%s\n", "Loging to syslog");
+    } else if (getopt_used(OPT_LOGTOFILE) || getopt_used(OPT_LOGFILE)) {
         log_file = getopt_str(OPT_LOGFILE);
         LOG_SET_FUNCS_VA(LOG_FILE_FUNCS);
         fprintf(stderr, "Logfile: '%s'\n", log_file);

@@ -123,7 +123,7 @@ AC_CHECK_HEADERS([linux/capability.h linux/securebits.h sys/signalfd.h sys/wait.
       [ AC_MSG_ERROR([required system specific header not available]) ])
 AC_CHECK_HEADERS([libutil.h pthread.h semaphore.h syslog.h sys/prctl.h linux/limits.h \
                   sys/uio.h poll.h sys/epoll.h sys/sysmacros.h sys/mount.h sys/mman.h \
-                  util.h execinfo.h])
+                  util.h execinfo.h syslog.h])
 
 dnl Check for GAI header
 AC_CHECK_HEADERS([netdb.h])
@@ -148,6 +148,11 @@ AC_CHECK_FUNCS([epoll_create1 epoll_ctl epoll_pwait], [],
 dnl backtrace* functions
 AC_CHECK_FUNCS([backtrace backtrace_symbols], [ backtrace_avail="yes" ],
                                               [ backtrace_avail="no"  ])
+dnl syslog functions
+AC_CHECK_FUNCS([openlog closelog syslog vsyslog], [ syslog_avail="yes" ],
+                                                  [ syslog_avail="no"  ])
+AM_CONDITIONAL([HAVE_SYSLOG], [test "x${syslog_avail}" = xyes])
+
 AC_CHECK_LIB([execinfo], [backtrace],
       [ LIBS="-lexecinfo $LIBS"
         backtrace_avail="yes" ])

@@ -3,3 +3,6 @@ potd_SOURCES = compat.c utils.c options.c log.c log_colored.c log_file.c socket.
 if HAVE_SECCOMP
 potd_SOURCES += pseccomp.c
 endif
+if HAVE_SYSLOG
+potd_SOURCES += log_syslog.c
+endif

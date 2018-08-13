@@ -35,6 +35,12 @@
 #include "config.h"
 #else
 #define POTD_LOGFILE "/tmp/potd.log"
+#define POTD_DEFROOT "/tmp/potd-root"
+#define POTD_RODIR   "/tmp/potd-rodir"
+#define POTD_ROFILE  "/tmp/potd-rofile"
+#define POTD_NETNS_RUN_DIR "/tmp/potd-netns"
+#define POTD_SSH_RUN_DIR   "/tmp/potd-ssh"
+#define POTD_DEFUSER "nobody"
 #endif
 
 #include <stdio.h>
@@ -88,6 +94,7 @@ struct opt {
 #define OPT_NOARG(arg, short_help, help) \
     OPT(OT_NOARG, .ll = 0, arg, short_help, help)
 static struct opt options[OPT_MAX+1] = {
+    OPT_NOARG("log-to-syslog", "log to the syslog interface\n", NULL),
     OPT_NOARG("log-to-file", "log to the default logfile path\n", NULL),
     OPT(OT_PATH, .str = POTD_LOGFILE, "log-file", "specify a logfile path\n",
         NULL),
