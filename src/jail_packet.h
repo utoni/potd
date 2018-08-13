@@ -38,19 +38,23 @@
 
 #include "pevent.h"
 
-#define PKT_INVALID 0x0
-#define PKT_HELLO   0x1
+#define PKT_INVALID 0x0 /* should not happen, otherwise error */
+#define PKT_HELLO   0x1 /* request(PKT_HELLO) -> response(PKT_HELLO) */
+#define PKT_USER    0x2 /* request(PKT_USER) -> response(PKT_USER) */
+#define PKT_PASS    0x3 /* request(PKT_PASS) -> response(PKT_PASS) */
 
 typedef enum jail_packet_state {
     JP_NONE, JP_INVALID, JP_HELLO
 } jail_packet_state;
 
 typedef struct jail_packet_ctx {
+    int is_server;
     jail_packet_state pstate;
+    on_data_cb on_data;
+    void *user_data;
 } jail_packet_ctx;
 
 
-int jail_packet_loop(event_ctx *ctx, jail_packet_ctx *pkt_ctx,
-                     on_data_cb on_data);
+int jail_packet_loop(event_ctx *ctx, jail_packet_ctx *pkt_ctx);
 
 #endif
