@@ -102,7 +102,7 @@ static inline void bin2hex_char(unsigned char c, char hexc[5]);
 static void print_stack_trace(void)
 {
     int i, trace_size = 0;
-    char **call_stack = NULL;
+    char **call_stack;
 
     trace_size = backtrace(stack_traces, MAX_STACK_FRAMES);
     call_stack = backtrace_symbols(stack_traces, trace_size);

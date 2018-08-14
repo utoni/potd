@@ -68,11 +68,12 @@ potd_localtime(const time_t *timep, struct tm *result)
 int
 potd_getpwnam(const char *name, struct passwd *pwd)
 {
-    struct passwd *result = NULL;
+    struct passwd *result;
 
     errno = 0;
 #ifdef HAVE_GETPWNAM_R
     char buf[BUFSIZ];
+    result = NULL;
 
     return getpwnam_r(name, pwd, buf, sizeof buf, &result) || !result;
 #else
@@ -87,11 +88,12 @@ potd_getpwnam(const char *name, struct passwd *pwd)
 int
 potd_getgrnam(const char *name, struct group *grp)
 {
-    struct group *result = NULL;
+    struct group *result;
 
     errno = 0;
 #ifdef HAVE_GETGRNAM_R
     char buf[BUFSIZ];
+    result = NULL;
 
     return getgrnam_r(name, grp, buf, sizeof buf, &result) || !result;
 #else

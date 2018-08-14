@@ -241,7 +241,6 @@ forward_state
 event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
                          void *user_data)
 {
-    int data_avail = 1;
     int saved_errno;
     forward_state rc = CON_OK;
     ssize_t siz;
@@ -253,7 +252,7 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
     ev = &ctx->events[ctx->current_event];
     ev_buf = (event_buf *) ev->data.ptr;
 
-    while (data_avail) {
+    while (1) {
         saved_errno = 0;
         siz = -1;
 

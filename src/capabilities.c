@@ -188,9 +188,9 @@ static int caps_find_name(const char *name)
 
 void caps_check_list(const char *clist, void (*callback)(int))
 {
-    char *str = NULL;
-    char *ptr = NULL;
-    char *start = NULL;
+    char *str;
+    char *ptr;
+    char *start;
     int nr;
 
     assert(clist && *clist != '\0');
