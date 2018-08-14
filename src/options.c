@@ -152,7 +152,6 @@ static int setopt(struct opt *o, const char *optarg);
 static size_t snprint_multilined_ljust(const char *prefix,
                                        const char *multiline,
                                        char *buf, size_t siz);
-static void usage(const char *arg0, int print_copyright);
 
 
 static int parse_path(opt_ptr *d, char *some_path)
@@ -282,7 +281,7 @@ static size_t snprint_multilined_ljust(const char *prefix,
     return off;
 }
 
-static void usage(const char *arg0, int print_copyright)
+void usage(const char *arg0, int print_copyright)
 {
     int i, has_default;
     size_t off;

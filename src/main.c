@@ -335,7 +335,8 @@ int main(int argc, char *argv[])
     }
 
     if (process_options(1) != POSITIVE_VALIDATIONS) {
-        fprintf(stderr, "%s: invalid/missing config detected\n", argv[0]);
+        usage(argv[0], 0);
+        fprintf(stderr, "\n%s: invalid/missing config detected\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 

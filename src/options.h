@@ -59,6 +59,8 @@ typedef enum opt_name {
 typedef int check_opt;
 
 
+void usage(const char *arg0, int print_copyright);
+
 int parse_cmdline(int argc, char **argv);
 
 int getopt_used(opt_name on);
