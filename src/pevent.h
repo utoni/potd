@@ -94,4 +94,8 @@ forward_state
 event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
                          void *user_data);
 
+int event_buf_fill(event_buf *buf, unsigned char *data, size_t size);
+
+ssize_t event_buf_drain(event_buf *buf);
+
 #endif

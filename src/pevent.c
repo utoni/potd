@@ -121,7 +121,7 @@ add_eventbuf(event_ctx *ctx)
     if (siz < ctx->buffer_used + 1) {
         siz += POTD_EVENTBUF_REALLOCSIZ;
 
-        ctx->buffer_array = realloc(ctx->buffer_array,
+        ctx->buffer_array = (event_buf *) realloc(ctx->buffer_array,
             sizeof(*ctx->buffer_array) * siz);
         assert(ctx->buffer_array);
 
@@ -226,9 +226,12 @@ int event_loop(event_ctx *ctx, on_event_cb on_event, void *user_data)
 
                 ctx->has_error = 1;
             } else {
-                if (!on_event(ctx, ctx->events[i].data.ptr, user_data) && !ctx->has_error)
+                if (!on_event(ctx, (event_buf *) ctx->events[i].data.ptr,
+                              user_data) && !ctx->has_error)
+                {
                     W2("Event callback failed: [fd: %d , npoll: %d]",
                         buf->fd, n);
+                }
             }
 
             if (!ctx->active || ctx->has_error)
@@ -322,4 +325,31 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
         shutdown(dest_fd, SHUT_RDWR);
     }
     return rc;
+}
+
+int event_buf_fill(event_buf *buf, unsigned char *data, size_t size)
+{
+    if (size > buf->buf_used && event_buf_drain(buf) < 0)
+        return 1;
+    if (size > sizeof(buf->buf))
+        return 1;
+    memcpy(buf->buf + buf->buf_used, data, size);
+    buf->buf_used += size;
+
+    return 0;
+}
+
+ssize_t event_buf_drain(event_buf *buf)
+{
+    ssize_t written;
+
+    if (!buf->buf_used)
+        return 0;
+
+    written = write(buf->fd, buf->buf, buf->buf_used);
+    if (written < 0)
+        return -1;
+    buf->buf_used -= written;
+
+    return written;
 }
