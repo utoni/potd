@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
     if (getopt_used(OPT_LOGLEVEL)) {
         value = getopt_str(OPT_LOGLEVEL);
         if (!strcasecmp(value, "debug"))
-            log_prio = DEBUG;
+            log_prio = LP_DEBUG;
         else if (!strcasecmp(value, "protocol"))
             log_prio = PROTOCOL;
         else if (!strcasecmp(value, "notice"))
