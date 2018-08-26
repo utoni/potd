@@ -12,3 +12,4 @@ fi
 
 set +x
 printf "\n%s\n" "You can now run \`./configure\` and \`make\`."
+printf "%s\n" "  (or run only \`make\` if potd is already configured)"
