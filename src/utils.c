@@ -663,7 +663,7 @@ int switch_network_namespace(const char *name)
         getopt_str(OPT_NETNS_RUN_DIR), name); /* Flawfinder: ignore */
     netns = open(net_path, O_RDONLY | O_CLOEXEC);
     if (netns < 0) {
-        E_STRERR("Open network namespace '%s'", name);
+        W_STRERR("Open network namespace '%s'", name);
         goto error;
     }
 
