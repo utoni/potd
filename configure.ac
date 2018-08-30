@@ -119,9 +119,9 @@ AC_CHECK_HEADERS([stdio.h ctype.h assert.h sched.h signal.h time.h errno.h pwd.h
       [ AC_MSG_ERROR([required std header not available]) ])
 
 dnl Check for system specific header files
-AC_CHECK_HEADERS([linux/capability.h linux/securebits.h sys/signalfd.h sys/wait.h sys/ioctl.h net/if.h netinet/in.h libgen.h], [],
+AC_CHECK_HEADERS([linux/capability.h linux/securebits.h sys/signalfd.h sys/wait.h sys/ioctl.h net/if.h netinet/in.h libgen.h sys/prctl.h], [],
       [ AC_MSG_ERROR([required system specific header not available]) ])
-AC_CHECK_HEADERS([libutil.h pthread.h semaphore.h syslog.h sys/prctl.h linux/limits.h \
+AC_CHECK_HEADERS([libutil.h pthread.h semaphore.h syslog.h linux/limits.h \
                   sys/uio.h poll.h sys/epoll.h sys/sysmacros.h sys/mount.h sys/mman.h \
                   util.h execinfo.h syslog.h])
 
@@ -450,5 +450,8 @@ AC_DEFINE_UNQUOTED([POTD_RODIR], ["$potd_rodir"],
 potd_rofile="/var/run/potd-rofile"
 AC_DEFINE_UNQUOTED([POTD_ROFILE], ["$potd_rofile"],
       [default path to a file for readonly bind mounts])
+potd_dbgdir="/tmp/potd-debug"
+AC_DEFINE_UNQUOTED([POTD_DBGDIR], ["$potd_dbgdir"],
+      [default path to a directory for debugging output])
 
 AC_OUTPUT(Makefile src/Makefile)

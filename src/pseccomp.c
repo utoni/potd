@@ -35,16 +35,24 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <assert.h>
+#include <sys/stat.h>
 #include <sys/prctl.h>
+#include <limits.h>
 #ifdef HAVE_VALGRIND
 #include <valgrind.h>
 #endif
 
 #include "pseccomp.h"
+#include "options.h"
 #include "log.h"
 #include "utils.h"
 
+static void pseccomp_export(const char *path, pseccomp_ctx *ctx, int as_text);
+static void pseccomp_dbg(const char *ruleset_name, pseccomp_ctx *ctx);
 static int pseccomp_using_valgrind(void);
 
 static const int minimum_disabled_syscalls[] = {
@@ -166,6 +174,38 @@ static const int jail_allowed_syscalls[] = {
 };
 
 
+static void pseccomp_export(const char *path, pseccomp_ctx *ctx, int as_text)
+{
+    int fd;
+
+    errno = 0;
+    fd = open(path, O_WRONLY | O_CLOEXEC | O_CREAT | O_TRUNC);
+    if (fd < 0)
+        FATAL("Open seccomp debug file '%s'", path);
+    if (as_text)
+        seccomp_export_pfc(ctx->sfilter, fd);
+    else
+        seccomp_export_bpf(ctx->sfilter, fd);
+    close(fd);
+}
+
+static void pseccomp_dbg(const char *ruleset_name, pseccomp_ctx *ctx)
+{
+    char path[PATH_MAX] = {0};
+
+    if (getopt_used(OPT_SECCOMP_DEBUG)) {
+        errno = 0;
+        if (mkdir(getopt_str(OPT_DEBUG_DIR), S_IRWXU) && errno != EEXIST)
+            FATAL("Create directory '%s'", getopt_str(OPT_DEBUG_DIR));
+        snprintf(path, sizeof path, "%s/seccomp_%s.txt", getopt_str(OPT_DEBUG_DIR),
+            ruleset_name);
+        pseccomp_export(path, ctx, 1);
+        snprintf(path, sizeof path, "%s/seccomp_%s.bin", getopt_str(OPT_DEBUG_DIR),
+            ruleset_name);
+        pseccomp_export(path, ctx, 0);
+    }
+}
+
 static int pseccomp_using_valgrind(void)
 {
 #ifdef HAVE_VALGRIND
@@ -231,6 +271,8 @@ int pseccomp_default_rules(pseccomp_ctx *ctx)
                 default_allowed_syscalls[i], 0);
     }
 
+    pseccomp_dbg("default", ctx);
+
     return seccomp_load(ctx->sfilter);
 }
 
@@ -245,6 +287,8 @@ int pseccomp_protocol_rules(pseccomp_ctx *ctx)
         seccomp_rule_add(ctx->sfilter, SCMP_ACT_ERRNO(EINVAL),
             protocol_disabled_syscalls[i], 0);
 
+    pseccomp_dbg("protocol", ctx);
+
     return seccomp_load(ctx->sfilter);
 }
 
@@ -258,6 +302,11 @@ int pseccomp_jail_rules(pseccomp_ctx *ctx)
     for (i = 0; i < SIZEOF(jail_allowed_syscalls); ++i)
         seccomp_rule_add(ctx->sfilter, SCMP_ACT_ALLOW,
             jail_allowed_syscalls[i], 0);
-
+#if 0
+    /*
+     * Inactive until we are using pivot_root instead of chroot in src/jail.
+     */
+    pseccomp_dbg("jail", ctx);
+#endif
     return seccomp_load(ctx->sfilter);
 }

@@ -50,6 +50,8 @@ typedef enum opt_name {
     OPT_CHUSER,
     OPT_CHGROUP,
     OPT_SECCOMP_MINIMAL,
+    OPT_SECCOMP_DEBUG,
+    OPT_DEBUG_DIR,
     OPT_RUNTEST,
 
     OPT_HELP,

@@ -140,6 +140,10 @@ static struct opt options[OPT_MAX+1] = {
         "mount, umount, ptrace, kernel module syscalls\n"
         "and some io syscalls\n"
         "(use this if you acknowledge errors on some platforms e.g. OpenWrt)\n"),
+    OPT_NOARG("seccomp-debug", "generate seccomp debug output\n", "generate seccomp bpf text/binary files useful\n"
+        "for debugging rulesets\n"),
+    OPT(OT_STR, .str = POTD_DBGDIR, "dbgdir", "debug directory\n",
+        "set an optional directory to output debug files\n"),
     OPT_NOARG("test", "test essential daemon functions and exit\n", NULL),
 
     OPT_NOARG("help", "this\n", NULL),
