@@ -6,7 +6,7 @@ stages:
 build-debian:
   image: debian:stable
   script:
-    - apt-get update -qq && apt-get install -y -qq coreutils make autoconf automake gcc pkg-config libseccomp-dev libssh-dev
+    - apt-get update -qq && apt-get install -y -qq coreutils git make autoconf automake gcc pkg-config libseccomp-dev libssh-dev
     - ./autogen.sh
     - CFLAGS="-DHAVE_SECCOMP=1" ./configure
     - make V=s
@@ -26,7 +26,7 @@ build-debian:
 build-arch:
   image: base/archlinux
   script:
-    - pacman -Syu --noconfirm coreutils make autoconf automake gcc pkg-config libseccomp libssh
+    - pacman -Syu --noconfirm coreutils git make autoconf automake gcc pkg-config libseccomp libssh
     - ./autogen.sh
     - CFLAGS="-DHAVE_SECCOMP=1" ./configure
     - make V=s
