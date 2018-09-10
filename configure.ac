@@ -429,6 +429,20 @@ AS_IF([test "x${hw_cv_func_snprintf}" != xyes
       [ AC_MSG_ERROR([snprintf or vsnprintf missing or not C99 compatible]) ],
       [])
 
+cat <<EOF
+
+--------- Configuration ---------
+global CFlags.: ${CFLAGS}
+global LDFlags: ${LDFLAGS}
+potd Libs.....: ${LIBS}
+
+
+EOF
+
+potd_LIBS="$LIBS"
+AC_SUBST(potd_LIBS, ["$potd_LIBS"])
+LIBS=""
+
 potd_logfile="/var/log/potd.log"
 AC_DEFINE_UNQUOTED([POTD_LOGFILE], ["$potd_logfile"],
       [default path to the log file])
