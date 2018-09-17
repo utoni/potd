@@ -27,9 +27,12 @@ Build:
   - `make`
 
 Run:
-  - `./src/potd --redirect 0.0.0.0:2222:127.0.0.1:22222 
-                --protocol 127.0.0.1:22222:127.0.0.1:33333 
-                --jail 127.0.0.1:33333`
+  - Example:
+    ```
+        ./src/potd --redirect 0.0.0.0:2222:127.0.0.1:22222
+                   --protocol 127.0.0.1:22222:127.0.0.1:33333
+                   --jail 127.0.0.1:33333
+    ```
 
     This will process, filter and redirect all traffic incoming from 0.0.0.0:2222 to the
     protocol handler at 127.0.0.1:22222 and if the protocol accepts it, it will forward
