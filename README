@@ -55,3 +55,8 @@ TODOs
     (send (real-time)statistics about protocols/jails/etc to higher level apps)
 - ptrace support for jailed processes (trace syscalls)
 - improved event handling (maybe libevent?)
+
+Software Architecture
+=====================
+
+see data/potd-arch.{svg,dia}

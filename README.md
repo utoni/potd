@@ -62,3 +62,7 @@ Suits perfect for your favoured Desktop/Server/OpenWrt Linux system.
     (send (real-time)statistics about protocols/jails/etc to higher level apps)
 - ptrace support for jailed processes (trace syscalls)
 - improved event handling (maybe libevent?)
+
+## Software Architecture
+
+![potd-arch](./data/potd-arch.svg)
