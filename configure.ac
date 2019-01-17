@@ -59,10 +59,28 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
       [ AC_MSG_RESULT([no])
         CFLAGS="$saved_CFLAGS" ])
 
-dnl check for -fvisibility=hidden compiler support (GCC >= 4)
+dnl check for -ffunction-sections compiler support
 saved_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -fvisibility=hidden"
-AC_MSG_CHECKING([if ${CC} supports -fvisibility=hidden])
+CFLAGS="$CFLAGS -ffunction-sections"
+AC_MSG_CHECKING([if ${CC} supports -ffunctions-sections])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
+      [ AC_MSG_RESULT([yes]) ],
+      [ AC_MSG_RESULT([no])
+        CFLAGS="$saved_CFLAGS" ])
+
+dnl check for -fdata-sections compiler support
+saved_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -fdata-sections"
+AC_MSG_CHECKING([if ${CC} supports -fdata-sections])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
+      [ AC_MSG_RESULT([yes]) ],
+      [ AC_MSG_RESULT([no])
+        CFLAGS="$saved_CFLAGS" ])
+
+dnl check for -flto compiler support
+saved_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -flto"
+AC_MSG_CHECKING([if ${CC} supports -flto])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
       [ AC_MSG_RESULT([yes]) ],
       [ AC_MSG_RESULT([no])
