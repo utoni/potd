@@ -120,7 +120,7 @@ static const int default_allowed_syscalls[] = {
     SCMP_SYS(setresuid), SCMP_SYS(setresuid32),  SCMP_SYS(setresgid), SCMP_SYS(setresgid32),
     SCMP_SYS(getuid), SCMP_SYS(getuid32), SCMP_SYS(geteuid), SCMP_SYS(geteuid32),
     SCMP_SYS(getgid), SCMP_SYS(getgid32), SCMP_SYS(getegid), SCMP_SYS(getegid),
-    SCMP_SYS(getgroups), SCMP_SYS(getdents),
+    SCMP_SYS(getgroups), SCMP_SYS(getdents), SCMP_SYS(getdents64),
     /* operations on processes */
     SCMP_SYS(getpgrp), SCMP_SYS(setpgid), SCMP_SYS(getpid), SCMP_SYS(getppid),
     SCMP_SYS(kill),
@@ -163,7 +163,7 @@ static const int jail_allowed_syscalls[] = {
     SCMP_SYS(setuid), SCMP_SYS(setgid),
     SCMP_SYS(setresuid), SCMP_SYS(setresgid),
     SCMP_SYS(getuid), SCMP_SYS(geteuid), SCMP_SYS(getgid), SCMP_SYS(getegid),
-    SCMP_SYS(getgroups), SCMP_SYS(getdents),
+    SCMP_SYS(getgroups), SCMP_SYS(getdents), SCMP_SYS(getdents64),
     SCMP_SYS(getpgrp), SCMP_SYS(setpgid), SCMP_SYS(getpid), SCMP_SYS(getppid),
     SCMP_SYS(kill),
     SCMP_SYS(chdir), SCMP_SYS(mount),
