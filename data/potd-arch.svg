@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created by diasvg.py -->
+<svg width="28.100cm" height="19.100cm" viewBox="0.950 0.950 29.050 20.050"
+ xmlns="http://www.w3.org/2000/svg"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect x="1.000" y="1.000" width="28.000" height="19.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="1.000" y="1.000" width="28.000" height="19.000" fill="none" stroke="#000000" stroke-width="0.100" />
+<rect x="1.000" y="1.000" width="28.000" height="3.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="1.000" y="1.000" width="28.000" height="3.000" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="15.000" y="2.695"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+honey[potd]aemon architecture (current)</text>
+<path stroke="#000000" fill="none" stroke-width="0.100"  d ="M 8.050,14.000 A 3.563,3.563 0 0,0 12.630,14.311 "/>
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="12.920,14.078 12.734,14.605 12.650,14.338 12.386,14.245 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="12.920,14.078 12.734,14.605 12.650,14.338 12.386,14.245 "/>
+<path stroke="#000000" fill="none" stroke-width="0.100"  d ="M 17.000,14.000 A 3.625,3.625 0 0,0 21.628,14.309 "/>
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="21.919,14.077 21.729,14.603 21.647,14.336 21.385,14.241 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="21.919,14.077 21.729,14.603 21.647,14.336 21.385,14.241 "/>
+<rect x="7.000" y="16.000" width="7.000" height="1.900" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="7.000" y="16.000" width="7.000" height="1.900" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="10.500" y="17.145"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+TCP Connection</text>
+<rect x="16.000" y="16.000" width="7.000" height="1.900" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="16.000" y="16.000" width="7.000" height="1.900" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="19.500" y="17.145"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+TCP Connection</text>
+<line x1="19.500" y1="15.950" x2="19.500" y2="15.487" stroke="#000000" stroke-width="0.100" />
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="19.500,15.112 19.750,15.612 19.500,15.487 19.250,15.612 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="19.500,15.112 19.750,15.612 19.500,15.487 19.250,15.612 "/>
+<line x1="10.500" y1="15.950" x2="10.500" y2="15.487" stroke="#000000" stroke-width="0.100" />
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="10.500,15.112 10.750,15.612 10.500,15.487 10.250,15.612 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="10.500,15.112 10.750,15.612 10.500,15.487 10.250,15.612 "/>
+<rect x="2.000" y="15.000" width="4.053" height="4.300" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="2.000" y="15.000" width="4.053" height="4.300" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="4.026" y="16.145"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+Incoming</text>
+<text x="4.026" y="16.945"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+TCP</text>
+<text x="4.026" y="17.745"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+Conn-</text>
+<text x="4.026" y="18.545"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+ection</text>
+<line x1="4.043" y1="14.950" x2="4.046" y2="14.487" stroke="#000000" stroke-width="0.100" />
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="4.049,14.112 4.295,14.614 4.046,14.487 3.795,14.610 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="4.049,14.112 4.295,14.614 4.046,14.487 3.795,14.610 "/>
+<rect x="24.000" y="15.000" width="4.000" height="4.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="24.000" y="15.000" width="4.000" height="4.000" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="26.000" y="17.195"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+Sandbox</text>
+<line x1="26.000" y1="14.000" x2="26.000" y2="14.468" stroke="#000000" stroke-width="0.100" />
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="26.000,14.843 25.750,14.343 26.000,14.468 26.250,14.343 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="26.000,14.843 25.750,14.343 26.000,14.468 26.250,14.343 "/>
+<rect x="20.000" y="7.000" width="8.000" height="7.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="20.000" y="7.000" width="8.000" height="7.000" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="24.000" y="9.095"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+- Initializes Sandbox</text>
+<text x="24.000" y="9.895"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+- Setup Filesystem</text>
+<text x="24.000" y="10.695"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+- PTY to TCP handler</text>
+<text x="24.000" y="11.495"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+- Enforce Security</text>
+<text x="24.000" y="12.295"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+Policies</text>
+<rect x="20.000" y="5.000" width="8.000" height="2.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="20.000" y="5.000" width="8.000" height="2.000" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="24.000" y="6.195"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+Jail</text>
+<rect x="11.000" y="7.000" width="8.000" height="7.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="11.000" y="7.000" width="8.000" height="7.000" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="15.000" y="8.695"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+- Setup per Protocol</text>
+<text x="15.000" y="9.495"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+Subprocesses</text>
+<text x="15.000" y="10.295"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+- Implements</text>
+<text x="15.000" y="11.095"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+various</text>
+<text x="15.000" y="11.895"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+Protocols</text>
+<text x="15.000" y="12.695"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+(SSH, HTTP, ...)</text>
+<rect x="11.000" y="5.000" width="8.000" height="2.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="11.000" y="5.000" width="8.000" height="2.000" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="15.000" y="6.195"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+Protocol</text>
+<rect x="2.050" y="7.000" width="8.000" height="7.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="2.050" y="7.000" width="8.000" height="7.000" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="6.050" y="10.295"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+- DDoS Protection</text>
+<text x="6.050" y="11.095"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+- (Session) Limits</text>
+<rect x="2.050" y="5.000" width="8.000" height="2.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="2.050" y="5.000" width="8.000" height="2.000" fill="none" stroke="#000000" stroke-width="0.100" />
+<text x="6.050" y="6.195"  fill="#000000" text-anchor="middle" font-size="0.80" font-family="sans" font-style="normal" font-weight="400">
+Redirector</text>
+</svg>
