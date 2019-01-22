@@ -129,7 +129,7 @@ static const int default_allowed_syscalls[] = {
     SCMP_SYS(chroot) /* Flawfinder: ignore */, SCMP_SYS(chdir), SCMP_SYS(mount), SCMP_SYS(umount2),
     SCMP_SYS(mknod), SCMP_SYS(mkdir), SCMP_SYS(rmdir),
     SCMP_SYS(statfs), SCMP_SYS(ioctl),
-    SCMP_SYS(umask), SCMP_SYS(chown) /* Flawfinder: ignore */,
+    SCMP_SYS(umask), SCMP_SYS(chown) /* Flawfinder: ignore */, SCMP_SYS(chown32) /* Flawfinder: ignore */,
     SCMP_SYS(chmod) /* Flawfinder: ignore */, SCMP_SYS(setsid),
     SCMP_SYS(dup), SCMP_SYS(dup2), SCMP_SYS(dup3),
     SCMP_SYS(sethostname), SCMP_SYS(uname), SCMP_SYS(arch_prctl)
