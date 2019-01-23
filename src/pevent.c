@@ -294,6 +294,12 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
 
         errno = 0;
         siz = write(dest_fd, ev_buf->buf, ev_buf->buf_used);
+        saved_errno = errno;
+        // FIXME: Add EPOLLOUT to epoll fd and wait until the buffer is drained
+/*
+        if (saved_errno == EAGAIN)
+            break;
+*/
 
         switch (siz) {
             case -1:
@@ -318,5 +324,7 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
         shutdown(ev_buf->fd, SHUT_RDWR);
         shutdown(dest_fd, SHUT_RDWR);
     }
+
+    errno = saved_errno;
     return rc;
 }

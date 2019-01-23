@@ -457,7 +457,7 @@ finish:
 static int
 client_io(event_ctx *ev_ctx, event_buf *buf, void *user_data)
 {
-    int dest_fd, src_fd = buf->fd;
+    int dest_fd, src_fd = buf->fd, saved_errno = 0;
     client_event *ev_cli = (client_event *) user_data;
     const psocket *client_sock = &ev_cli->client_args->client_sock;
     forward_state fwd_state;
@@ -469,6 +469,7 @@ client_io(event_ctx *ev_ctx, event_buf *buf, void *user_data)
     } else return 0;
 
     fwd_state = event_forward_connection(ev_ctx, dest_fd, NULL, NULL);
+    saved_errno = errno;
 
     switch (fwd_state_string(fwd_state, ev_cli->client_args,
                              ev_cli->fwd_sock))
@@ -480,6 +481,7 @@ client_io(event_ctx *ev_ctx, event_buf *buf, void *user_data)
             return 1;
         case CON_IN_ERROR:
         case CON_OUT_ERROR:
+            errno = saved_errno;
             ev_ctx->active = 0;
             return 0;
     }
