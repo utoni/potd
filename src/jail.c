@@ -203,7 +203,9 @@ pid_t jail_daemonize(event_ctx **ev_ctx, jail_ctx *ctx[], size_t siz)
             E_STRERR("%s", "Jail daemonize");
 	        return -1;
         case 0:
+#ifndef ENABLE_PTRACE
             caps_jail_filter();
+#endif
             jail_mainloop(ev_ctx, (const jail_ctx **) ctx, siz);
     }
     D2("Jail daemon pid: %d", p);
@@ -408,7 +410,15 @@ static int jail_childfn(prisoner_process *ctx)
 
             D2("Safe change root to: '%s'", ctx->newroot);
             if (safe_chroot(ctx->newroot))
-            FATAL("Safe jail chroot to '%s' failed", ctx->newroot);
+                FATAL("Safe jail chroot to '%s' failed", ctx->newroot);
+
+            if (setsid() < 0)
+                FATAL("setsid() for pid %d", self_pid);
+            setpgrp();
+#if 0
+            D2("getsid(): %d , getpgrp(): %d , getpgid(): %d , getpid(): %d , getppid(): %d",
+                getsid(0), getpgrp(), getpgid(0), getpid(), getppid());
+#endif
 
             fs_basic_fs();
             socket_set_ifaddr(&ctx->client_psock, "lo", "127.0.0.1", "255.0.0.0");

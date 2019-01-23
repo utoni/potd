@@ -384,7 +384,13 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+#ifdef ENABLE_PTRACE
+    E2("%s", "Ptrace mode enabled! Use this mode only for "
+             "debugging problems with sandbox apps.");
+#else
     caps_default_filter();
+#endif
+
 #ifdef HAVE_SECCOMP
     pseccomp_init(&psc,
         (getopt_used(OPT_SECCOMP_MINIMAL) ? PS_MINIMUM : 0));

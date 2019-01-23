@@ -476,6 +476,10 @@ AC_DEFINE_UNQUOTED([POTD_ROFILE], ["$potd_rofile"],
 potd_dbgdir="/tmp/potd-debug"
 AC_DEFINE_UNQUOTED([POTD_DBGDIR], ["$potd_dbgdir"],
       [default path to a directory for debugging output])
+potd_enable_ptrace=no
+AS_IF([test "x${potd_enable_ptrace}" = xyes],
+      [AC_DEFINE([ENABLE_PTRACE], [1],
+      [Enable this if you want (unsecure) ptrace support in your sandbox (for debugging).])], [])
 
 AC_OUTPUT(Makefile src/Makefile)
 

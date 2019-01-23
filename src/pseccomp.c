@@ -88,11 +88,12 @@ static const int minimum_disabled_syscalls[] = {
 static const int default_allowed_syscalls[] = {
     SCMP_SYS(restart_syscall),
     SCMP_SYS(signalfd), SCMP_SYS(signalfd4),
-    SCMP_SYS(rt_sigreturn), SCMP_SYS(rt_sigprocmask),
+    SCMP_SYS(sigreturn), SCMP_SYS(rt_sigreturn), SCMP_SYS(rt_sigprocmask),
     SCMP_SYS(rt_sigaction), SCMP_SYS(time), SCMP_SYS(nanosleep),
     SCMP_SYS(clock_gettime), SCMP_SYS(set_tid_address),
     SCMP_SYS(exit), SCMP_SYS(exit_group),
     SCMP_SYS(read), SCMP_SYS(readv), SCMP_SYS(write), SCMP_SYS(writev),
+    SCMP_SYS(process_vm_readv), SCMP_SYS(process_vm_writev),
     SCMP_SYS(fcntl), SCMP_SYS(fcntl64),
     SCMP_SYS(close), SCMP_SYS(wait4),
     SCMP_SYS(sigprocmask), SCMP_SYS(tgkill), SCMP_SYS(gettid), SCMP_SYS(set_tls),
@@ -105,7 +106,7 @@ static const int default_allowed_syscalls[] = {
     SCMP_SYS(set_robust_list), SCMP_SYS(getrlimit),
     SCMP_SYS(seccomp), SCMP_SYS(getrusage),
     SCMP_SYS(prlimit64),
-    SCMP_SYS(prctl), SCMP_SYS(mmap), SCMP_SYS(mmap2), SCMP_SYS(brk), SCMP_SYS(madvise),
+    SCMP_SYS(mmap), SCMP_SYS(mmap2), SCMP_SYS(brk), SCMP_SYS(madvise),
     SCMP_SYS(mlock), SCMP_SYS(getrandom),
     SCMP_SYS(mprotect), SCMP_SYS(munmap), SCMP_SYS(futex),
     /* operations on files */
@@ -114,15 +115,16 @@ static const int default_allowed_syscalls[] = {
     SCMP_SYS(access) /* Flawfinder: ignore */,
     SCMP_SYS(_llseek), SCMP_SYS(lseek), SCMP_SYS(stat), SCMP_SYS(stat64),
     SCMP_SYS(readlink) /* Flawfinder: ignore */, SCMP_SYS(getcwd),
-    SCMP_SYS(lstat), SCMP_SYS(sysinfo),
+    SCMP_SYS(lstat), SCMP_SYS(lstat64), SCMP_SYS(sysinfo),
     /* operations on user/group */
     SCMP_SYS(setuid), SCMP_SYS(setuid32), SCMP_SYS(setgid), SCMP_SYS(setgid32),
+    SCMP_SYS(setreuid), SCMP_SYS(setreuid32),
     SCMP_SYS(setresuid), SCMP_SYS(setresuid32),  SCMP_SYS(setresgid), SCMP_SYS(setresgid32),
     SCMP_SYS(getuid), SCMP_SYS(getuid32), SCMP_SYS(geteuid), SCMP_SYS(geteuid32),
-    SCMP_SYS(getgid), SCMP_SYS(getgid32), SCMP_SYS(getegid), SCMP_SYS(getegid),
+    SCMP_SYS(getgid), SCMP_SYS(getgid32), SCMP_SYS(getegid), SCMP_SYS(getegid32),
     SCMP_SYS(getgroups), SCMP_SYS(getdents), SCMP_SYS(getdents64),
     /* operations on processes */
-    SCMP_SYS(getpgrp), SCMP_SYS(setpgid), SCMP_SYS(getpid), SCMP_SYS(getppid),
+    SCMP_SYS(getsid), SCMP_SYS(getpgrp), SCMP_SYS(getpgid), SCMP_SYS(getpid), SCMP_SYS(getppid),
     SCMP_SYS(kill),
     /* other */
     SCMP_SYS(unshare), SCMP_SYS(setns),
@@ -130,9 +132,14 @@ static const int default_allowed_syscalls[] = {
     SCMP_SYS(mknod), SCMP_SYS(mkdir), SCMP_SYS(rmdir),
     SCMP_SYS(statfs), SCMP_SYS(ioctl),
     SCMP_SYS(umask), SCMP_SYS(chown) /* Flawfinder: ignore */, SCMP_SYS(chown32) /* Flawfinder: ignore */,
-    SCMP_SYS(chmod) /* Flawfinder: ignore */, SCMP_SYS(setsid),
+    SCMP_SYS(chmod) /* Flawfinder: ignore */, SCMP_SYS(setsid), SCMP_SYS(setpgid),
     SCMP_SYS(dup), SCMP_SYS(dup2), SCMP_SYS(dup3),
-    SCMP_SYS(sethostname), SCMP_SYS(uname), SCMP_SYS(arch_prctl)
+    SCMP_SYS(sethostname), SCMP_SYS(uname),
+    SCMP_SYS(prctl), SCMP_SYS(arch_prctl)
+#if ENABLE_PTRACE
+    ,
+    SCMP_SYS(ptrace)
+#endif
 };
 
 static const int protocol_disabled_syscalls[] = {
@@ -142,11 +149,12 @@ static const int protocol_disabled_syscalls[] = {
 static const int jail_allowed_syscalls[] = {
     SCMP_SYS(restart_syscall),
     SCMP_SYS(signalfd), SCMP_SYS(signalfd4),
-    SCMP_SYS(rt_sigreturn), SCMP_SYS(rt_sigprocmask),
+    SCMP_SYS(sigreturn), SCMP_SYS(rt_sigreturn), SCMP_SYS(rt_sigprocmask),
     SCMP_SYS(rt_sigaction), SCMP_SYS(time), SCMP_SYS(nanosleep),
     SCMP_SYS(clock_gettime), SCMP_SYS(set_tid_address),
     SCMP_SYS(exit), SCMP_SYS(exit_group),
-    SCMP_SYS(read), SCMP_SYS(write), SCMP_SYS(writev),
+    SCMP_SYS(read), SCMP_SYS(readv), SCMP_SYS(write), SCMP_SYS(writev),
+    SCMP_SYS(process_vm_readv), SCMP_SYS(process_vm_writev),
     SCMP_SYS(fcntl), SCMP_SYS(fcntl64),
     SCMP_SYS(close), SCMP_SYS(wait4),
     SCMP_SYS(sigprocmask), SCMP_SYS(tgkill), SCMP_SYS(gettid), SCMP_SYS(set_tls),
@@ -159,18 +167,26 @@ static const int jail_allowed_syscalls[] = {
     SCMP_SYS(poll), SCMP_SYS(pipe), SCMP_SYS(pipe2),
     SCMP_SYS(lseek), SCMP_SYS(stat), SCMP_SYS(stat64),
     SCMP_SYS(readlink) /* Flawfinder: ignore */, SCMP_SYS(getcwd),
-    SCMP_SYS(lstat), SCMP_SYS(sysinfo),
-    SCMP_SYS(setuid), SCMP_SYS(setgid),
-    SCMP_SYS(setresuid), SCMP_SYS(setresgid),
-    SCMP_SYS(getuid), SCMP_SYS(geteuid), SCMP_SYS(getgid), SCMP_SYS(getegid),
+    SCMP_SYS(lstat), SCMP_SYS(lstat64), SCMP_SYS(sysinfo),
+    SCMP_SYS(setuid), SCMP_SYS(setuid32), SCMP_SYS(setgid), SCMP_SYS(setgid32),
+    SCMP_SYS(setreuid), SCMP_SYS(setreuid32),
+    SCMP_SYS(setresuid), SCMP_SYS(setresuid32),  SCMP_SYS(setresgid), SCMP_SYS(setresgid32),
+    SCMP_SYS(getuid), SCMP_SYS(getuid32), SCMP_SYS(geteuid), SCMP_SYS(geteuid),
+    SCMP_SYS(getgid), SCMP_SYS(getgid32), SCMP_SYS(getegid), SCMP_SYS(getegid32),
     SCMP_SYS(getgroups), SCMP_SYS(getdents), SCMP_SYS(getdents64),
-    SCMP_SYS(getpgrp), SCMP_SYS(setpgid), SCMP_SYS(getpid), SCMP_SYS(getppid),
+    SCMP_SYS(getsid), SCMP_SYS(getpgrp), SCMP_SYS(getpgid), SCMP_SYS(getpid), SCMP_SYS(getppid),
     SCMP_SYS(kill),
+    SCMP_SYS(setsid), SCMP_SYS(setpgid),
     SCMP_SYS(chdir), SCMP_SYS(mount),
     SCMP_SYS(umount2),
     SCMP_SYS(ioctl),
     SCMP_SYS(dup), SCMP_SYS(dup2), SCMP_SYS(dup3),
-    SCMP_SYS(sethostname), SCMP_SYS(uname), SCMP_SYS(arch_prctl)
+    SCMP_SYS(sethostname), SCMP_SYS(uname)
+#if ENABLE_PTRACE
+    ,
+    SCMP_SYS(arch_prctl), SCMP_SYS(prctl),
+    SCMP_SYS(ptrace)
+#endif
 };
 
 
