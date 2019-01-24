@@ -420,7 +420,7 @@ void fs_proc_sys(const char *newroot)
 
     snprintf(path, sizeof path, "%s/proc", newroot);
     D("%s: Remounting '%s'", __func__, path);
-    if (mount("proc", path, "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV|MS_REC,
+    if (mount("proc", path, "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV|MS_REC|MS_RDONLY,
             NULL) < 0)
     {
         FATAL("%s: mounting %s", __func__, path);
