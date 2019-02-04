@@ -52,6 +52,7 @@
 #include <assert.h>
 
 #include "jail.h"
+#include "jail_packet.h"
 #include "socket.h"
 #ifdef HAVE_SECCOMP
 #include "pseccomp.h"
@@ -74,10 +75,9 @@ typedef struct server_event {
 } server_event;
 
 typedef struct client_event {
-    psocket *client_sock;
+    jail_con connection;
     char *host_buf;
     char *service_buf;
-    int tty_fd;
     int signal_fd;
     char tty_logbuf[BUFSIZ];
     size_t off_logbuf;
@@ -87,15 +87,11 @@ typedef struct client_event {
 
 static int jail_mainloop(event_ctx **ev_ctx, const jail_ctx *ctx[], size_t siz)
     __attribute__((noreturn));
-static int jail_accept_client(event_ctx *ev_ctx, event_buf *buf,
+static int jail_accept_client(event_ctx *ev_ctx, int src_fd,
                               void *user_data);
 static int jail_childfn(prisoner_process *ctx)
     __attribute__((noreturn));
 static int jail_socket_tty(prisoner_process *ctx, int tty_fd);
-static int jail_socket_tty_io(event_ctx *ev_ctx, event_buf *buf,
-                              void *user_data);
-static int jail_log_input(event_ctx *ev_ctx, int src_fd, int dst_fd,
-                          char *buf, size_t siz, void *user_data);
 
 
 void jail_init_ctx(jail_ctx **ctx, size_t stacksize)
@@ -161,7 +157,7 @@ int jail_setup_event(jail_ctx *ctx[], size_t siz, event_ctx **ev_ctx)
         return 1;
 
     for (size_t i = 0; i < siz; ++i) {
-        if (event_add_sock(*ev_ctx, &ctx[i]->fwd_ctx.sock)) {
+        if (event_add_sock(*ev_ctx, &ctx[i]->fwd_ctx.sock, NULL)) {
             return 1;
         }
 
@@ -235,24 +231,23 @@ static int jail_mainloop(event_ctx **ev_ctx, const jail_ctx *ctx[], size_t siz)
     exit(rc);
 }
 
-static int jail_accept_client(event_ctx *ev_ctx, event_buf *buf,
+static int jail_accept_client(event_ctx *ev_ctx, int src_fd,
                               void *user_data)
 {
     size_t i, rc = 0;
-    int s, fd;
+    int s;
     pid_t prisoner_pid;
     server_event *ev_jail;
     static prisoner_process *args;
     const jail_ctx *jail_ctx;
 
     (void) ev_ctx;
-    assert(ev_ctx && buf && user_data);
+    assert(ev_ctx && user_data);
     ev_jail = (server_event *) user_data;
-    fd = buf->fd;
 
     for (i = 0; i < ev_jail->siz; ++i) {
         jail_ctx = ev_jail->jail_ctx[i];
-        if (jail_ctx->fwd_ctx.sock.fd == fd) {
+        if (jail_ctx->fwd_ctx.sock.fd == src_fd) {
             args = (prisoner_process *) calloc(1, sizeof(*args));
             assert(args);
             args->newroot = jail_ctx->newroot;
@@ -440,6 +435,21 @@ static int jail_childfn(prisoner_process *ctx)
             if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0)
                 exit(EXIT_FAILURE);
 
+#ifdef HAVE_SECCOMP
+            pseccomp_set_immutable();
+            pseccomp_init(&psc,
+                (getopt_used(OPT_SECCOMP_MINIMAL) ? PS_MINIMUM : 0));
+            if (pseccomp_jail_rules(psc))
+                FATAL("%s", "SECCOMP: adding jail rules");
+            pseccomp_free(&psc);
+#else
+            /* libseccomp is not available, so drop at least all caps */
+            W2("%s", "Compiled without libseccomp, dropping ALL capabilities");
+            caps_drop_all();
+#endif
+
+            if (sethostname("openwrt", SIZEOF("openwrt")))
+                exit(EXIT_FAILURE);
             printf("%s",
                 "  _______                     ________        __\n"
                 " |       |.-----.-----.-----.|  |  |  |.----.|  |_\n"
@@ -458,22 +468,6 @@ static int jail_childfn(prisoner_process *ctx)
                 "  * 1 splash Cranberry juice\n"
                 " -----------------------------------------------------\n"
             );
-
-#ifdef HAVE_SECCOMP
-            pseccomp_set_immutable();
-            pseccomp_init(&psc,
-                (getopt_used(OPT_SECCOMP_MINIMAL) ? PS_MINIMUM : 0));
-            if (pseccomp_jail_rules(psc))
-                FATAL("%s", "SECCOMP: adding jail rules");
-            pseccomp_free(&psc);
-#else
-            /* libseccomp is not available, so drop at least all caps */
-            W2("%s", "Compiled without libseccomp, dropping ALL capabilities");
-            caps_drop_all();
-#endif
-
-            if (sethostname("openwrt", SIZEOF("openwrt")))
-                exit(EXIT_FAILURE);
             /* Flawfinder: ignore */
             if (execl(path_shell, path_shell, (char *) NULL))
                 exit(EXIT_FAILURE);
@@ -511,13 +505,14 @@ finalise:
 
 static int jail_socket_tty(prisoner_process *ctx, int tty_fd)
 {
-    static client_event ev_cli = {NULL, NULL, NULL, -1, -1, {0}, 0, 0, 0};
+    static client_event ev_cli = {{-1,-1}, NULL, NULL, -1, {0}, 0, NULL, 0};
+    static jail_packet_ctx pkt_ctx =
+        {0, 0, 1, EMPTY_JAILCON, EMPTY_BUF, JC_SERVER, JP_NONE, NULL, NULL};
     int s, rc = 1;
     event_ctx *ev_ctx = NULL;
     sigset_t mask;
 
     assert(ctx);
-    ev_cli.tty_fd = tty_fd;
 
     event_init(&ev_ctx);
     if (event_setup(ev_ctx)) {
@@ -531,12 +526,12 @@ static int jail_socket_tty(prisoner_process *ctx, int tty_fd)
             ctx->host_buf, ctx->service_buf, ctx->client_psock.fd);
         goto finish;
     }
-    if (event_add_sock(ev_ctx, &ctx->client_psock)) {
+    if (event_add_sock(ev_ctx, &ctx->client_psock, NULL)) {
         E_STRERR("Jail event context for socket %s:%s",
             ctx->host_buf, ctx->service_buf);
         goto finish;
     }
-    if (event_add_fd(ev_ctx, tty_fd)) {
+    if (event_add_fd(ev_ctx, tty_fd, NULL)) {
         E_STRERR("Jail event context for tty fd %d",
             tty_fd);
         goto finish;
@@ -554,25 +549,34 @@ static int jail_socket_tty(prisoner_process *ctx, int tty_fd)
         E_STRERR("%s", "SIGNAL fd");
         goto finish;
     }
-    if (event_add_fd(ev_ctx, ev_cli.signal_fd)) {
+    if (event_add_fd(ev_ctx, ev_cli.signal_fd, NULL)) {
         E_STRERR("Jail SIGNAL fd %d", ev_cli.signal_fd);
         goto finish;
     }
 
-    ev_cli.client_sock = &ctx->client_psock;
+    pkt_ctx.connection.client_fd = ev_cli.connection.client_fd = ctx->client_psock.fd;
+    pkt_ctx.connection.jail_fd = ev_cli.connection.jail_fd = tty_fd;
     ev_cli.host_buf = &ctx->host_buf[0];
     ev_cli.service_buf = &ctx->service_buf[0];
-    rc = event_loop(ev_ctx, jail_socket_tty_io, &ev_cli);
+
+    if (!jail_server_handshake(ev_ctx, &pkt_ctx) && pkt_ctx.is_valid) {
+        N("Using Jail protocol for %s:%s",
+            ctx->host_buf, ctx->service_buf);
+        rc = jail_server_loop(ev_ctx, &pkt_ctx);
+    } else {
+        E("Jail protocol handshake failed for %s:%s",
+            ctx->host_buf, ctx->service_buf);
+    }
 finish:
-    close(ev_cli.signal_fd);
     event_free(&ev_ctx);
     return rc;
 }
 
+#if 0
 static int
-jail_socket_tty_io(event_ctx *ev_ctx, event_buf *buf, void *user_data)
+jail_socket_tty_io(event_ctx *ev_ctx, int src_fd, void *user_data)
 {
-    int dest_fd, src_fd = buf->fd;
+    int dest_fd;
     client_event *ev_cli = (client_event *) user_data;
     forward_state fwd_state;
 
@@ -580,10 +584,10 @@ jail_socket_tty_io(event_ctx *ev_ctx, event_buf *buf, void *user_data)
     (void) src_fd;
     (void) ev_cli;
 
-    if (src_fd == ev_cli->client_sock->fd) {
-        dest_fd = ev_cli->tty_fd;
-    } else if (src_fd == ev_cli->tty_fd) {
-        dest_fd = ev_cli->client_sock->fd;
+    if (src_fd == ev_cli->connection.client_fd) {
+        dest_fd = ev_cli->connection.jail_fd;
+    } else if (src_fd == ev_cli->connection.jail_fd) {
+        dest_fd = ev_cli->connection.client_fd;
     } else if (src_fd == ev_cli->signal_fd) {
         ev_ctx->active = 0;
         return 0;
@@ -607,18 +611,17 @@ jail_socket_tty_io(event_ctx *ev_ctx, event_buf *buf, void *user_data)
     return 1;
 }
 
-static int jail_log_input(event_ctx *ev_ctx, int src_fd, int dst_fd,
-                          char *buf, size_t siz, void *user_data)
+static int jail_log_input(event_ctx *ev_ctx, event_buf *read_buf,
+                          event_buf *write_buf, void *user_data)
 {
-    size_t idx = 0, slen, ssiz = siz;
+    size_t idx = 0, slen, read_siz = read_buf->buf_used;
     client_event *ev_cli = (client_event *) user_data;
 
     (void) ev_ctx;
-    (void) src_fd;
 
-    if (ev_cli->tty_fd == dst_fd) {
-        while (ssiz > 0) {
-            slen = MIN(sizeof(ev_cli->tty_logbuf) - ev_cli->off_logbuf, ssiz);
+    if (ev_cli->connection.jail_fd == write_buf->fd) {
+        while (read_siz > 0) {
+            slen = MIN(sizeof(ev_cli->tty_logbuf) - ev_cli->off_logbuf, read_siz);
             if (slen == 0) {
                 escape_ascii_string(ev_cli->tty_logbuf, ev_cli->off_logbuf,
                                     &ev_cli->tty_logbuf_escaped, &ev_cli->tty_logbuf_size);
@@ -628,12 +631,14 @@ static int jail_log_input(event_ctx *ev_ctx, int src_fd, int dst_fd,
                 ev_cli->tty_logbuf[0] = 0;
                 continue;
             }
-            strncat(ev_cli->tty_logbuf, buf+idx, slen);
-            ssiz -= slen;
+            strncat(ev_cli->tty_logbuf, read_buf->buf + idx, slen);
+            read_siz -= slen;
             idx += slen;
             ev_cli->off_logbuf += slen;
         }
-        if (buf[siz-1] == '\r' || buf[siz-1] == '\n') {
+        if (read_buf->buf[read_buf->buf_used-1] == '\r' ||
+            read_buf->buf[read_buf->buf_used-1] == '\n')
+        {
             escape_ascii_string(ev_cli->tty_logbuf, ev_cli->off_logbuf,
                                 &ev_cli->tty_logbuf_escaped, &ev_cli->tty_logbuf_size);
             C("[%s:%s] %s", ev_cli->host_buf, ev_cli->service_buf,
@@ -643,5 +648,8 @@ static int jail_log_input(event_ctx *ev_ctx, int src_fd, int dst_fd,
         }
     }
 
+    event_buf_dup(read_buf, write_buf);
+
     return 0;
 }
+#endif

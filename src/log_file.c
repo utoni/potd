@@ -108,7 +108,7 @@ void log_fmt_file(log_priority prio, const char *fmt, ...)
     my_pid = getpid();
     curtime_str(time, sizeof time);
     switch (prio) {
-        case DEBUG:
+        case LP_DEBUG:
             LOG(flog, time, "[DEBUG]  ", my_pid, out);
             break;
         case NOTICE:
@@ -148,7 +148,7 @@ void log_fmtex_file(log_priority prio, const char *srcfile,
     my_pid = getpid();
     curtime_str(time, sizeof time);
     switch (prio) {
-        case DEBUG:
+        case LP_DEBUG:
             LOGEX(flog, time, "[DEBUG]  ", my_pid, srcfile, line, out);
             break;
         case NOTICE:
@@ -186,7 +186,7 @@ void log_fmtexerr_file(log_priority prio, const char *srcfile,
     my_pid = getpid();
     curtime_str(time, sizeof time);
     switch (prio) {
-        case DEBUG:
+        case LP_DEBUG:
             LOGEXERR(flog, time, "[DEBUG]  ", my_pid, srcfile, line, out,
                 saved_errno);
             break;

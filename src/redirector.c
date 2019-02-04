@@ -76,11 +76,11 @@ fwd_state_string(const forward_state c_state, const client_thread *args,
 static int
 redirector_mainloop(event_ctx **ev_ctx, redirector_ctx *rdr_ctx[], size_t siz)
     __attribute__((noreturn));
-static int redirector_accept_client(event_ctx *ev_ctx, event_buf *buf,
+static int redirector_accept_client(event_ctx *ev_ctx, int src_fd,
                                     void *user_data);
 static void *
 client_mainloop(void *arg);
-static int client_io(event_ctx *ev_ctx, event_buf *buf, void *user_data);
+static int client_io(event_ctx *ev_ctx, int src_fd, void *user_data);
 
 static pthread_attr_t pattr;
 
@@ -177,7 +177,7 @@ int redirector_setup_event(redirector_ctx *rdr_ctx[], size_t siz, event_ctx **ev
         return 1;
 
     for (size_t i = 0; i < siz; ++i) {
-        if (event_add_sock(*ev_ctx, &rdr_ctx[i]->sock)) {
+        if (event_add_sock(*ev_ctx, &rdr_ctx[i]->sock, NULL)) {
             return 1;
         }
 
@@ -294,25 +294,24 @@ static int redirector_mainloop(event_ctx **ev_ctx, redirector_ctx *rdr_ctx[], si
     exit(rc);
 }
 
-static int redirector_accept_client(event_ctx *ev_ctx, event_buf *buf,
+static int redirector_accept_client(event_ctx *ev_ctx, int src_fd,
                                     void *user_data)
 {
     size_t i;
     double d;
-    int s, fd;
+    int s;
     time_t t;
     server_event *ev_srv;
     client_thread *args;
     redirector_ctx *rdr_ctx;
 
     (void) ev_ctx;
-    assert(ev_ctx && buf && user_data);
+    assert(ev_ctx && user_data);
     ev_srv = (server_event *) user_data;
-    fd = buf->fd;
 
     for (i = 0; i < ev_srv->siz; ++i) {
         rdr_ctx = ev_srv->rdr_ctx[i];
-        if (rdr_ctx->sock.fd == fd) {
+        if (rdr_ctx->sock.fd == src_fd) {
             args = (client_thread *) calloc(1, sizeof(*args));
             assert(args);
 
@@ -412,7 +411,7 @@ client_mainloop(void *arg)
         args->rdr_ctx->fwd_ctx.host_buf,
         args->rdr_ctx->fwd_ctx.service_buf, fwd.fd);
 
-    if (event_add_sock(ev_ctx, &fwd)) {
+    if (event_add_sock(ev_ctx, &fwd, NULL)) {
         E_STRERR("Forward event context add to %s:%s forward fd %d",
             args->rdr_ctx->fwd_ctx.host_buf,
             args->rdr_ctx->fwd_ctx.service_buf, fwd.fd);
@@ -430,7 +429,7 @@ client_mainloop(void *arg)
             args->rdr_ctx->fwd_ctx.service_buf, fwd.fd);
         goto finish;
     }
-    if (event_add_sock(ev_ctx, &args->client_sock)) {
+    if (event_add_sock(ev_ctx, &args->client_sock, NULL)) {
         E_STRERR("Forward event context add to %s:%s forward fd %d",
 	        args->rdr_ctx->fwd_ctx.host_buf,
             args->rdr_ctx->fwd_ctx.service_buf, fwd.fd);
@@ -455,9 +454,9 @@ finish:
 }
 
 static int
-client_io(event_ctx *ev_ctx, event_buf *buf, void *user_data)
+client_io(event_ctx *ev_ctx, int src_fd, void *user_data)
 {
-    int dest_fd, src_fd = buf->fd, saved_errno = 0;
+    int dest_fd;
     client_event *ev_cli = (client_event *) user_data;
     const psocket *client_sock = &ev_cli->client_args->client_sock;
     forward_state fwd_state;

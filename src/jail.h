@@ -43,6 +43,8 @@
 #define MIN_STACKSIZE 2048
 #define MAX_STACKSIZE BUFSIZ
 
+#define EMPTY_JAILCON { -1, -1 }
+
 typedef struct jail_ctx {
     forward_ctx fwd_ctx;
     char host_buf[NI_MAXHOST], service_buf[NI_MAXSERV];
@@ -51,6 +53,11 @@ typedef struct jail_ctx {
     void *stack_beg;
     char *newroot;
 } jail_ctx;
+
+typedef struct jail_con {
+    int client_fd;
+    int jail_fd;
+} jail_con;
 
 
 void jail_init_ctx(jail_ctx **ctx, size_t stacksize);

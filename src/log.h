@@ -46,11 +46,11 @@
         log_fmtexerr = fmtexerr_cb; \
     }
 #define LOG_SET_FUNCS_VA(...) LOG_SET_FUNCS(__VA_ARGS__)
-#define D(fmt, ...) log_fmt(DEBUG, fmt, __VA_ARGS__)
+#define D(fmt, ...) log_fmt(LP_DEBUG, fmt, __VA_ARGS__)
 #define N(fmt, ...) log_fmt(NOTICE, fmt, __VA_ARGS__)
 #define W(fmt, ...) log_fmt(WARNING, fmt, __VA_ARGS__)
 #define E(fmt, ...) log_fmt(ERROR, fmt, __VA_ARGS__)
-#define D2(fmt, ...) log_fmtex(DEBUG, __FILE__, __LINE__, fmt, __VA_ARGS__)
+#define D2(fmt, ...) log_fmtex(LP_DEBUG, __FILE__, __LINE__, fmt, __VA_ARGS__)
 #define N2(fmt, ...) log_fmtex(NOTICE, __FILE__, __LINE__, fmt, __VA_ARGS__)
 #define W2(fmt, ...) log_fmtex(WARNING, __FILE__, __LINE__, fmt, __VA_ARGS__)
 #define E2(fmt, ...) log_fmtex(ERROR, __FILE__, __LINE__, fmt, __VA_ARGS__)
@@ -76,7 +76,7 @@
 #define P(fmt, ...) log_fmt(PROTOCOL, fmt, __VA_ARGS__)
 
 typedef enum log_priority {
-    DEBUG = 0, PROTOCOL, NOTICE, WARNING, ERROR, CMD
+    LP_DEBUG = 0, PROTOCOL, NOTICE, WARNING, ERROR, CMD
 } log_priority;
 
 typedef int (*log_open_cb) (void);
