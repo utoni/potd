@@ -468,7 +468,6 @@ client_io(event_ctx *ev_ctx, int src_fd, void *user_data)
     } else return 0;
 
     fwd_state = event_forward_connection(ev_ctx, dest_fd, NULL, NULL);
-    saved_errno = errno;
 
     switch (fwd_state_string(fwd_state, ev_cli->client_args,
                              ev_cli->fwd_sock))
@@ -480,7 +479,6 @@ client_io(event_ctx *ev_ctx, int src_fd, void *user_data)
             return 1;
         case CON_IN_ERROR:
         case CON_OUT_ERROR:
-            errno = saved_errno;
             ev_ctx->active = 0;
             return 0;
     }

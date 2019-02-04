@@ -81,7 +81,7 @@ void log_fmt_syslog(log_priority prio, const char *fmt, ...)
     assert(fmt);
     va_start(arglist, fmt);
     switch (prio) {
-        case DEBUG:
+        case LP_DEBUG:
             LOG(LOG_DEBUG, fmt, arglist);
             break;
         case NOTICE:
@@ -118,7 +118,7 @@ void log_fmtex_syslog(log_priority prio, const char *srcfile,
     va_end(arglist);
 
     switch (prio) {
-        case DEBUG:
+        case LP_DEBUG:
             LOGEX(LOG_DEBUG, srcfile, line, out);
             break;
         case NOTICE:
@@ -152,7 +152,7 @@ void log_fmtexerr_syslog(log_priority prio, const char *srcfile,
     va_end(arglist);
 
     switch (prio) {
-        case DEBUG:
+        case LP_DEBUG:
             LOGEXERR(LOG_DEBUG, srcfile, line, out, saved_errno);
             break;
         case NOTICE:

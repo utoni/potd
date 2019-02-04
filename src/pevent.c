@@ -258,7 +258,7 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
     ev = &ctx->events[ctx->current_event];
     read_buf = (event_buf *) ev->data.ptr;
 
-    while (data_avail && ctx->active && !ctx->has_error) {
+    while (ctx->active && !ctx->has_error) {
         saved_errno = 0;
         siz = -1;
 
