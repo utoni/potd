@@ -181,10 +181,10 @@ static const int jail_allowed_syscalls[] = {
     SCMP_SYS(umount2),
     SCMP_SYS(ioctl),
     SCMP_SYS(dup), SCMP_SYS(dup2), SCMP_SYS(dup3),
-    SCMP_SYS(sethostname), SCMP_SYS(uname)
+    SCMP_SYS(sethostname), SCMP_SYS(uname), SCMP_SYS(arch_prctl),
 #if ENABLE_PTRACE
     ,
-    SCMP_SYS(arch_prctl), SCMP_SYS(prctl),
+    SCMP_SYS(prctl),
     SCMP_SYS(ptrace)
 #endif
 };
