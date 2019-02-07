@@ -24,7 +24,7 @@ build-debian:
       - ./config.log
 
 build-arch:
-  image: base/archlinux
+  image: finalduty/archlinux:daily
   script:
     - pacman -Syu --noconfirm coreutils git make autoconf automake gcc pkg-config libseccomp libssh
     - ./autogen.sh
@@ -44,7 +44,7 @@ build-arch:
       - ./config.log
 
 flawfinder:
-  image: base/archlinux
+  image: finalduty/archlinux:daily
   stage: analysis
   script:
     - pacman -Syu --noconfirm flawfinder
@@ -58,7 +58,7 @@ flawfinder:
       - ./flawfinder_inputs.html
 
 cppcheck:
-  image: base/archlinux
+  image: finalduty/archlinux:daily
   stage: analysis
   script:
     - pacman -Syu --noconfirm cppcheck
