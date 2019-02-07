@@ -26,13 +26,13 @@ build-debian:
 build-arch:
   image: finalduty/archlinux:daily
   script:
+    - pacman -Sy archlinux-keyring --noconfirm
     - pacman -Syu --noconfirm coreutils git make autoconf automake gcc pkg-config libseccomp libssh
     - ./autogen.sh
     - CFLAGS="-DHAVE_SECCOMP=1" ./configure
     - make V=s
     - cp ./src/potd ./src/potd-full
     - cp ./config.log ./config-full.log
-    - pacman -Rsn --noconfirm libseccomp
     - ./configure
     - make V=s
   stage: test
@@ -47,6 +47,7 @@ flawfinder:
   image: finalduty/archlinux:daily
   stage: analysis
   script:
+    - pacman -Sy archlinux-keyring --noconfirm
     - pacman -Syu --noconfirm flawfinder
     - flawfinder --minlevel=3 -QD .
     - flawfinder --inputs --minlevel=3 -QD .
@@ -61,5 +62,6 @@ cppcheck:
   image: finalduty/archlinux:daily
   stage: analysis
   script:
+    - pacman -Sy archlinux-keyring --noconfirm
     - pacman -Syu --noconfirm cppcheck
     - cppcheck --force --enable=warning,unusedFunction,performance,portability --inconclusive --std=posix -DNDEBUG=1 -DHAVE_STRTOK_R=1 -DHAVE_LOCALTIME_R=1 -DHAVE_GETPWNAM_R=1 -DHAVE_GETGRNAM_R=1 ./src
