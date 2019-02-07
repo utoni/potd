@@ -30,9 +30,16 @@ build-arch:
     - ./autogen.sh
     - CFLAGS="-DHAVE_SECCOMP=1" ./configure
     - make V=s
+    - cp ./src/potd ./src/potd-full
+    - cp ./config.log ./config-full.log
+    - pacman -Rsn --noconfirm libseccomp
+    - ./configure
+    - make V=s
   stage: test
   artifacts:
     paths:
+      - ./src/potd-full
+      - ./config-full.log
       - ./src/potd
       - ./config.log
 
