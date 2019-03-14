@@ -39,6 +39,7 @@ Run:
     all traffic to the jail/sandbox at 127.0.0.1:33333.
     
     (clunky atm, will be simplified in the future)
+  - Do not forget to set the `--rootfs <directory>` which contains an executable `/bin/sh`.
   - see `./src/potd --help`
 
 ## Features
