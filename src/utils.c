@@ -1091,6 +1091,12 @@ int selftest_minimal_requirements(void)
         E_STRERR("ROOT-directory '%s' check", getopt_str(OPT_ROOT));
         goto error;
     }
+    memset(&test[0], 0, sizeof test);
+    snprintf(test, sizeof test, "%s%s", getopt_str(OPT_ROOT), "/bin/sh");
+    if (access(test, R_OK | X_OK)) {
+        E_STRERR("Access shell '%s'", test);
+        goto error;
+    }
     if (mkdir(getopt_str(OPT_NETNS_RUN_DIR), S_IRWXU) && errno != EEXIST) {
         E_STRERR("NETNS-directory '%s' check", getopt_str(OPT_NETNS_RUN_DIR));
         goto error;
