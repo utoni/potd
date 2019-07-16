@@ -12,7 +12,7 @@ build-debian:
     - make V=s
     - cp ./src/potd ./src/potd-full
     - cp ./config.log ./config-full.log
-    - apt-get purge -y -qq libseccomp2 libseccomp-dev
+    - apt-get purge --allow-remove-essential -y -qq libseccomp2 libseccomp-dev
     - ./configure
     - make V=s
   stage: build
