@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/lnslbrty/potd.svg?branch=master)](https://travis-ci.org/lnslbrty/potd)
+[![Travis Build Status](https://travis-ci.org/lnslbrty/potd.svg?branch=master)](https://travis-ci.org/lnslbrty/potd)
+[![Gitlab Build Status](https://gitlab.com/lnslbrty/potd/badges/master/build.svg)](https://gitlab.com/lnslbrty/potd)
 [![Coverity Status](https://scan.coverity.com/projects/16232/badge.svg?flat=1)](https://scan.coverity.com/projects/16232)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8ee6023b774f4f31b58f13aeb28a4bc1)](https://www.codacy.com/app/lnslbrty/potd?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=lnslbrty/potd&amp;utm_campaign=Badge_Grade)
 [![GitHub issues](https://img.shields.io/github/issues/lnslbrty/potd.svg)](https://github.com/lnslbrty/potd/issues)
