@@ -287,8 +287,6 @@ AS_IF([test "x${libssh_require_gssapi}" = xyes],
             [ AC_MSG_ERROR([pkg-config: krb5-gssapi >= 1.15 not found]) ])
         CFLAGS="$saved_CFLAGS $gssapi_CFLAGS "
         LIBS="$saved_LIBS $gssapi_LIBS"
-        AC_CHECK_LIB([krb5-gssapi], [gss_init_sec_context], [],
-            [ AC_MSG_ERROR([krb5-gssapi link failed]) ])
         AC_CHECK_LIB([ssh], [ssh_free],
             [ AC_MSG_ERROR([final link against libssh failed]) ])
         CFLAGS="$saved_CFLAGS $gssapi_CFLAGS"
