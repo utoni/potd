@@ -52,6 +52,7 @@ typedef enum forward_state {
     CON_IN_ERROR, CON_OUT_ERROR
 } forward_state;
 
+/* event buffer; used for input/output buffering */
 typedef struct event_buf {
     int fd;
 
@@ -61,6 +62,7 @@ typedef struct event_buf {
     void *buf_user_data;
 } event_buf;
 
+/* event context; represents a global, per event queue state */
 typedef struct event_ctx {
     int active;
     int has_error;

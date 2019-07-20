@@ -266,6 +266,10 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
             errno = 0;
             siz = event_buf_read(read_buf);
             saved_errno = errno;
+
+            if (read_buf->buf_used == sizeof(read_buf->buf)) {
+                W2("Buffer bloat for read buffer: %zu\n", read_buf->buf_used);
+            }
         } else break;
         if (saved_errno == EAGAIN)
             break;
@@ -329,6 +333,10 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
                            siz, read_buf->fd, dest_fd);
                     }
                     break;
+            }
+
+            if (write_buf.buf_used == sizeof(write_buf.buf)) {
+                W2("Buffer bloat for write buffer: %zu\n", write_buf.buf_used);
             }
         }
 
