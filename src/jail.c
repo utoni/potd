@@ -480,8 +480,8 @@ static int jail_childfn(prisoner_process *ctx)
                 goto finalise;
             }
 
-            N("Socket to tty I/O for prisoner pid %d",
-                child_pid);
+            N("Socket to tty I/O for prisoner pid for fd %d: %d",
+                master_fd, child_pid);
             if (jail_socket_tty(ctx, master_fd))
                 E_STRERR("Socket to tty I/O for prisoner pid %d",
                     child_pid);

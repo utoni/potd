@@ -38,6 +38,9 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <string.h>
+#ifdef HAVE_VALGRIND
+#include <memcheck.h>
+#endif
 
 #include "socket.h"
 
@@ -117,6 +120,11 @@ static inline ssize_t event_buf_read(event_buf *read_buf)
                event_buf_avail(read_buf));
     if (siz > 0)
         read_buf->buf_used += siz;
+#ifdef HAVE_VALGRIND
+    VALGRIND_MAKE_MEM_UNDEFINED(read_buf->buf + read_buf->buf_used,
+                                sizeof(read_buf->buf)*sizeof(read_buf->buf[0]) -
+                                read_buf->buf_used);
+#endif
     return siz;
 }
 
@@ -126,6 +134,11 @@ static inline void event_buf_discard(event_buf *input, size_t siz)
         memmove(input->buf + siz, input->buf, input->buf_used - siz);
         input->buf_used -= siz;
     }
+#ifdef HAVE_VALGRIND
+    VALGRIND_MAKE_MEM_UNDEFINED(input->buf + input->buf_used,
+                                sizeof(input->buf)*sizeof(input->buf[0]) -
+                                input->buf_used);
+#endif
 }
 
 static inline void event_buf_discardall(event_buf *input)
