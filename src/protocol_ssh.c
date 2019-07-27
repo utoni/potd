@@ -779,6 +779,7 @@ static int client_mainloop(ssh_client *data, jail_packet_ctx *pkt_ctx)
     if (jail_client_data(ev_ctx, &userdata.proto_read,
                          &userdata.proto_chan, pkt_ctx))
     {
+        E2("SSH: jail_client_data failed for fd %d", ctx->sock.fd);
         ssh_channel_close(chan);
         event_free(&ev_ctx);
         return 1;
@@ -789,7 +790,6 @@ static int client_mainloop(ssh_client *data, jail_packet_ctx *pkt_ctx)
     ssh_channel_cb.userdata = &userdata;
     ssh_callbacks_init(&ssh_channel_cb);
     ssh_set_channel_callbacks(chan, &ssh_channel_cb);
-
     events = POLLIN | POLLPRI | POLLERR | POLLHUP | POLLNVAL;
     event = ssh_event_new();
 

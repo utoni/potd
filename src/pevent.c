@@ -259,20 +259,21 @@ event_forward_connection(event_ctx *ctx, int dest_fd, on_data_cb on_data,
     read_buf = (event_buf *) ev->data.ptr;
 
     while (ctx->active && !ctx->has_error) {
+        errno = 0;
         saved_errno = 0;
         siz = -1;
 
-        if (ev->events & EPOLLIN) {
-            errno = 0;
+        if ((ev->events & EPOLLIN) == 0)
+            break;
+
+        if (event_buf_avail(read_buf)) {
             siz = event_buf_read(read_buf);
             saved_errno = errno;
-
-            if (read_buf->buf_used == sizeof(read_buf->buf)) {
-                W2("Buffer bloat for read buffer: %zu\n", read_buf->buf_used);
-            }
-        } else break;
-        if (saved_errno == EAGAIN)
-            break;
+            if (!event_buf_avail(read_buf))
+                W2("Buffer bloat for read buffer with fd: %d\n", read_buf->fd);
+            if (saved_errno == EAGAIN)
+                break;
+        }
 
         switch (siz) {
             case -1:

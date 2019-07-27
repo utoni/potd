@@ -99,24 +99,23 @@ static ssize_t pkt_header_read(unsigned char *buf, size_t siz)
 static int pkt_write(event_buf *write_buf, uint8_t type, unsigned char *buf,
                      size_t siz)
 {
+    off_t buf_off = 0;
     uint16_t pkt_size;
     jail_packet pkt;
 
     pkt.type = type;
-    pkt_size = siz;
-
     do {
         pkt_size = (siz > PKT_MAXSIZ - sizeof(pkt) ?
-            PKT_MAXSIZ - sizeof(pkt) : pkt_size);
+            PKT_MAXSIZ - sizeof(pkt) : siz);
         pkt.size = htons(pkt_size);
 
         if (event_buf_fill(write_buf, (char *) &pkt, sizeof pkt) ||
-            (buf && event_buf_fill(write_buf, (char *) buf, pkt_size)))
+            (buf && event_buf_fill(write_buf, (char *) buf + buf_off, pkt_size)))
         {
             return 1;
         }
-        siz -= pkt_size;
-    } while (siz > 0);
+        buf_off += pkt_size;
+    } while ((siz -= pkt_size) > 0);
 
     return 0;
 }
@@ -124,6 +123,8 @@ static int pkt_write(event_buf *write_buf, uint8_t type, unsigned char *buf,
 static int pkt_handshake(jail_packet_ctx *ctx, jail_packet *pkt,
                          event_buf *write_buf)
 {
+    (void) write_buf;
+
     jail_packet_handshake *pkt_hello;
 
     if (ctx->ctype != JC_SERVER)
@@ -239,6 +240,9 @@ static int pkt_data(jail_packet_ctx *ctx, jail_packet *pkt,
 static int pkt_respok(jail_packet_ctx *ctx, jail_packet *pkt,
                       event_buf *write_buf)
 {
+    (void) pkt;
+    (void) write_buf;
+
     if (ctx->ctype == JC_CLIENT) {
         switch (ctx->pstate) {
             case JP_HANDSHAKE:
@@ -308,7 +312,8 @@ static int jail_packet_pkt(event_ctx *ev_ctx, event_buf *read_buf,
     jail_packet_ctx *pkt_ctx = (jail_packet_ctx *) user_data;
     jail_packet *pkt;
     ssize_t pkt_siz;
-    off_t pkt_off = 0;
+    size_t pkt_rem;
+    off_t pkt_off;
 
     if (read_buf->fd == pkt_ctx->connection.jail_fd &&
         pkt_ctx->ctype == JC_SERVER)
@@ -320,12 +325,19 @@ static int jail_packet_pkt(event_ctx *ev_ctx, event_buf *read_buf,
                       (unsigned char *) read_buf->buf,
                       read_buf->buf_used))
         {
+            W2("%s", "Packet creation failed");
             return 1;
         }
 
         if (event_buf_drain(&pkt_ctx->writeback_buf) < 0)
+        {
+            W2("%s", "Event buffer drain failed");
             return 1;
+        }
+
+        event_buf_discardall(&pkt_ctx->writeback_buf);
         event_buf_discardall(read_buf);
+        event_buf_discardall(write_buf);
 
         return 0;
     } else
@@ -336,35 +348,41 @@ static int jail_packet_pkt(event_ctx *ev_ctx, event_buf *read_buf,
         return 0;
     }
 
+    pkt_off = 0;
+    pkt_rem = read_buf->buf_used;
     while (1) {
         /* FIXME: not optimal for preventing buffer bloats */
         if (event_buf_avail(write_buf) < PKT_MAXSIZ)
             break;
 
         pkt_siz = pkt_header_read((unsigned char *) read_buf->buf + pkt_off,
-                                  read_buf->buf_used);
+                                  pkt_rem);
         if (pkt_siz < 0) {
             /* invalid jail packet */
+            E2("Invalid jail packet for fd %d", read_buf->fd);
             pkt_ctx->pstate = JP_INVALID;
             break;
-        } else if (pkt_siz == 0)
+        } else if (pkt_siz == 0) {
             /* require more data */
             break;
+        }
 
         pkt = (jail_packet *)(read_buf->buf + pkt_off);
         if (jpc[pkt->type].pc &&
             jpc[pkt->type].pc(pkt_ctx, pkt, write_buf))
         {
+            E2("Jail packet callback failed for fd %d", write_buf->fd);
             pkt_ctx->pstate = JP_INVALID;
             break;
         }
 
         pkt_off += pkt_siz;
-        read_buf->buf_used -= pkt_siz;
+        pkt_rem -= pkt_siz;
     }
 
-    if (pkt_off)
+    if (pkt_off) {
         event_buf_discard(read_buf, pkt_off);
+    }
 
     if (event_buf_drain(write_buf) < 0)
         pkt_ctx->pstate = JP_INVALID;
@@ -379,7 +397,6 @@ static int jail_packet_pkt(event_ctx *ev_ctx, event_buf *read_buf,
     }
 
     ev_ctx->active = pkt_ctx->ev_active;
-
     return 0;
 }
 
@@ -486,7 +503,6 @@ event_ctx *jail_client_handshake(int server_fd, jail_packet_ctx *pkt_ctx)
 
     if (pkt_write(&write_buf, PKT_HANDSHAKE_END, NULL, 0))
         goto finish;
-
     if (event_buf_drain(&write_buf) < 0)
         goto finish;
 
