@@ -62,9 +62,14 @@
 #include "utils.h"
 #include "log.h"
 
-#if LIBSSH_VERSION_MAJOR != 0 || LIBSSH_VERSION_MINOR < 7 || \
-    LIBSSH_VERSION_MICRO < 3
-#pragma message "Unsupported libssh version < 0.7.3"
+#if LIBSSH_VERSION_MAJOR == 0
+#if LIBSSH_VERSION_MINOR < 7
+#pragma message "Unsupported libssh version < 0.7.x"
+#elif LIBSSH_VERSION_MINOR > 7
+#pragma message "Unsupported libssh version > 0.7.x"
+#endif
+#else
+#error "Unsupported libssh version 1.x.x, this software WONT work"
 #endif
 #define CACHE_MAX 32
 #define CACHE_TIME (60 * 20) /* max cache time 20 minutes */
