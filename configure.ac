@@ -32,6 +32,17 @@ esac
 AC_CHECK_TOOL([PKGCONFIG], [pkg-config], [:])
 AS_IF([test "x${PKGCONFIG}" = x], [ AC_MSG_ERROR([pkg-config not found]) ])
 
+dnl sanitizer
+AC_ARG_ENABLE([sanitizer],
+      AS_HELP_STRING([--enable-sanitizer], [Define POTD_ENABLE_SANITIZER=1]),
+      [ AC_DEFINE(POTD_ENABLE_SANITIZER, 1, [Enable ASAN, LSAN and UBSAN])
+        CFLAGS="$CFLAGS -fsanitize=address -fsanitize=leak -fsanitize=undefined"
+        AC_MSG_CHECKING([if sanitizer work for your current compiler])
+        AC_COMPILE_IFELSE([AC_LANG_SOURCE([int fn(void) {}])],
+            AC_MSG_RESULT([yes]),
+            [ AC_MSG_RESULT([no])
+              AC_MSG_ERROR([Your compiler does not support all required sanitizer: ASNA, LSAN and UBSAN.]) ]) ])
+
 dnl check for -std=gnu99
 CFLAGS="-pedantic -Wall -std=gnu99 -D_GNU_SOURCE=1 $CFLAGS"
 AC_MSG_CHECKING([if ${CC} supports gnu99])
