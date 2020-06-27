@@ -24,7 +24,7 @@ build-debian:
       - ./config.log
 
 build-arch:
-  image: finalduty/archlinux:daily
+  image: archlinux/base
   script:
     - pacman -Sy archlinux-keyring --noconfirm
     - pacman -Syu --noconfirm coreutils git make autoconf automake gcc pkg-config libseccomp libssh
@@ -44,7 +44,7 @@ build-arch:
       - ./config.log
 
 flawfinder:
-  image: finalduty/archlinux:daily
+  image: archlinux/base
   stage: analysis
   script:
     - pacman -Sy archlinux-keyring --noconfirm
@@ -59,7 +59,7 @@ flawfinder:
       - ./flawfinder_inputs.html
 
 cppcheck:
-  image: finalduty/archlinux:daily
+  image: archlinux/base
   stage: analysis
   script:
     - pacman -Sy archlinux-keyring --noconfirm
