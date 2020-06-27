@@ -118,7 +118,7 @@ static const int default_allowed_syscalls[] = {
     SCMP_SYS(lstat), SCMP_SYS(lstat64), SCMP_SYS(sysinfo),
     /* operations on user/group */
     SCMP_SYS(setuid), SCMP_SYS(setuid32), SCMP_SYS(setgid), SCMP_SYS(setgid32),
-    SCMP_SYS(setreuid), SCMP_SYS(setreuid32),
+    SCMP_SYS(setreuid), SCMP_SYS(setreuid32), SCMP_SYS(setregid), SCMP_SYS(setregid32),
     SCMP_SYS(setresuid), SCMP_SYS(setresuid32),  SCMP_SYS(setresgid), SCMP_SYS(setresgid32),
     SCMP_SYS(getuid), SCMP_SYS(getuid32), SCMP_SYS(geteuid), SCMP_SYS(geteuid32),
     SCMP_SYS(getgid), SCMP_SYS(getgid32), SCMP_SYS(getegid), SCMP_SYS(getegid32),

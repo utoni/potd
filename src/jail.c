@@ -450,6 +450,15 @@ static int jail_childfn(prisoner_process *ctx)
 
             if (sethostname("openwrt", SIZEOF("openwrt")))
                 exit(EXIT_FAILURE);
+            /* TODO: map root user: unshare(CLONE_NEWUSER); */
+            if (setresgid(65534, 65534, 65534)) {
+                D2("setregid failed: %s", strerror(errno));
+            }
+            if (setresuid(65534, 65534, 65534)) {
+                D2("setreuid failed: %s", strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+
             printf("%s",
                 "  _______                     ________        __\n"
                 " |       |.-----.-----.-----.|  |  |  |.----.|  |_\n"
