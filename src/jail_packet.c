@@ -350,13 +350,12 @@ static int jail_packet_pkt(event_ctx *ev_ctx, event_buf *read_buf,
 
     pkt_off = 0;
     pkt_rem = read_buf->buf_used;
-    while (1) {
+    while (pkt_rem > 0) {
         /* FIXME: not optimal for preventing buffer bloats */
         if (event_buf_avail(write_buf) < PKT_MAXSIZ)
             break;
 
-        pkt_siz = pkt_header_read((unsigned char *) read_buf->buf + pkt_off,
-                                  pkt_rem);
+        pkt_siz = pkt_header_read((unsigned char *) read_buf->buf + pkt_off, pkt_rem);
         if (pkt_siz < 0) {
             /* invalid jail packet */
             E2("Invalid jail packet for fd %d", read_buf->fd);
